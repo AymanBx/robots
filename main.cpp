@@ -189,21 +189,25 @@ int main(int argc, char **argv)
 		numCols = std::atoi(argv[2]);
 		numBoxes = std::atoi(argv[3]);
 		numDoors = std::atoi(argv[4]);
+       	cout<< "Num of args = " << argc<< endl;
 	}
 	
 	if (numRows*numCols < 6*numBoxes){
 		numRows = 2*numBoxes;
 		numCols = 2*numBoxes;
+        cout <<"Check 1" << endl;
 	}
 	
 	if (numBoxes < 1){
 		cerr<< "You have entered a low number of boxes" << endl;
 		exit(404);
 	}
+    cout <<"Check 2" << endl;
 	if (numDoors < 1 || numDoors > 3){
 		cerr<< "You have entered a weird number of doors" << endl;
 		exit(404);
 	}
+    cout <<"Check 3" << endl;
 
 	// Initialize the random ranges
 	boxRowDist = uniform_int_distribution<int>(1, numRows - 2);
@@ -269,9 +273,10 @@ void initializeApplication(void)
 	//	of the doors, boxes, and robots, and create threads (not
 	//	necessarily in that order).
 	//---------------------------------------------------------------
-	// initDoors();
-	// initBoxes();
-	// initRobots();
+	initDoors();
+	initBoxes();
+	initRobots();
+	doorAssign = {0, 1, 0, 0, 1};
 
 
 
