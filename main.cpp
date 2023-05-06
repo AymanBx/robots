@@ -26,6 +26,7 @@
 #include <random>
 #include <vector>
 #include <map>
+#include <mutex>
 #include <cstdio>
 #include <cstdlib>
 //
@@ -50,6 +51,11 @@ string printGrid(void);
 void initializeApplication(void);
 void cleanupAndQuit();
 void generatePartitions();
+// Added functions
+bool checkAvailability(GridPosition coordinates);
+void initDoors();
+void initRobots();
+void initBoxes();
 
 #if 0
 //=================================================================
@@ -125,14 +131,33 @@ vector<int> doorAssign;
 vector<GridPosition> robotLoc;
 vector<GridPosition> boxLoc;
 vector<GridPosition> doorLoc;
+// A vector that holds all the filled-up cells
+vector<GridPosition> filledCells;
 
-//	For extra credit section
+// Random engine init
 random_device randDev;
 default_random_engine engine(randDev());
+
+// Random ranges
+uniform_int_distribution<int> boxRowDist;
+uniform_int_distribution<int> boxColDist;
+uniform_int_distribution<int> doorDist;
+uniform_int_distribution<int> rowDist;
+uniform_int_distribution<int> colDist;
+
+// Create & initialize locks
+mutex gridLock;
+mutex outputLock;
+
+//	For extra credit section
 vector<SlidingPartition> partitionList;
 //	Change argument to 0.5 for equal probability of vertical and horizontal partitions
 //	0 for only horizontal, and 1 for only vertical
 bernoulli_distribution headsOrTails(1.0);
+
+
+
+
 
 #if 0
 //=================================================================
@@ -151,10 +176,42 @@ int main(int argc, char **argv)
 	//	to be the width (number of columns) and height (number of rows) of the
 	//	grid, the number of boxes (and robots), and the number of doors.
 	//	You are going to have to extract these.
-	numRows = std::atoi(argv[1]);
-	numCols = std::atoi(argv[2]);
-	numBoxes = std::atoi(argv[3]);
-	numDoors = std::atoi(argv[4]);
+	// if (argc = 3){
+	// 	numBoxes = std::atoi(argv[1]);
+	// 	numDoors = std::atoi(argv[2]);
+	// }
+	if (argc != 5){
+		cerr<< "Usage: ./robotsV0 <rows> <columns> <boxes> <doors>" << endl;
+		exit(404);
+	}
+	else{
+		numRows = std::atoi(argv[1]);
+		numCols = std::atoi(argv[2]);
+		numBoxes = std::atoi(argv[3]);
+		numDoors = std::atoi(argv[4]);
+	}
+	
+	if (numRows*numCols < 6*numBoxes){
+		numRows = 2*numBoxes;
+		numCols = 2*numBoxes;
+	}
+	
+	if (numBoxes < 1){
+		cerr<< "You have entered a low number of boxes" << endl;
+		exit(404);
+	}
+	if (numDoors < 1 || numDoors > 3){
+		cerr<< "You have entered a weird number of doors" << endl;
+		exit(404);
+	}
+
+	// Initialize the random ranges
+	boxRowDist = uniform_int_distribution<int>(1, numRows - 2);
+	boxColDist = uniform_int_distribution<int>(1, numCols - 2);
+	doorDist = uniform_int_distribution<int>(0, numDoors - 1);
+	rowDist = uniform_int_distribution<int>(1, numRows - 1);
+	colDist = uniform_int_distribution<int>(1, numCols - 1);
+
 
 	//	Even though we extracted the relevant information from the argument
 	//	list, I still need to pass argc and argv to the front-end init
@@ -212,6 +269,14 @@ void initializeApplication(void)
 	//	of the doors, boxes, and robots, and create threads (not
 	//	necessarily in that order).
 	//---------------------------------------------------------------
+	// initDoors();
+	// initBoxes();
+	// initRobots();
+
+
+
+
+
 	//	For extra credit
 	// generatePartitions();
 }
@@ -233,6 +298,55 @@ void *robotFunc(void *)
 	}
 
 	return nullptr;
+}
+
+bool checkAvailability(GridPosition coordinates){
+	bool available = true;
+	for (int i = 0; i < filledCells.size(), i++;){
+		if (coordinates == filledCells[i]){
+			available = false;
+		}
+	}
+	return available;
+}
+
+void initDoors(){
+	while (doorLoc.size() < numDoors){
+		int row = rowDist(engine);
+		int col = colDist(engine);
+		GridPosition coordinates = {row, col};
+		bool available = checkAvailability(coordinates);
+		if (available){
+			doorLoc.push_back(coordinates);
+			filledCells.push_back(coordinates);
+		}
+	}
+}
+
+void initRobots(){
+	while (robotLoc.size() < numBoxes){
+		int row = rowDist(engine);
+		int col = colDist(engine);
+		GridPosition coordinates = {row, col};
+		bool available = checkAvailability(coordinates);
+		if (available){
+			robotLoc.push_back(coordinates);
+			filledCells.push_back(coordinates);
+		}
+	}
+}
+
+void initBoxes(){
+	while (boxLoc.size() < numBoxes){
+		int row = boxRowDist(engine);
+		int col = boxColDist(engine);
+		GridPosition coordinates = {row, col};
+		bool available = checkAvailability(coordinates);
+		if (available){
+			boxLoc.push_back(coordinates);
+			filledCells.push_back(coordinates);
+		}
+	}
 }
 
 #if 0
@@ -274,13 +388,13 @@ string printGrid(void)
 	//	addd doors
 	for (int k = 0; k < numDoors; k++)
 	{
-		strGrid[doorLoc[k][0]][doorLoc[k][1]] = doorStr[k];
+		strGrid[doorLoc[k].row][doorLoc[k].col] = doorStr[k];
 	}
 	//	add boxes
 	for (int k = 0; k < numBoxes; k++)
 	{
-		strGrid[boxLoc[k][0]][boxLoc[k][1]] = boxStr[k];
-		strGrid[robotLoc[k][0]][robotLoc[k][1]] = robotStr[k];
+		strGrid[boxLoc[k].row][boxLoc[k].col] = boxStr[k];
+		strGrid[robotLoc[k].row][robotLoc[k].col] = robotStr[k];
 	}
 
 	ostringstream outStream;

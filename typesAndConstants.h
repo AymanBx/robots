@@ -70,6 +70,11 @@ struct GridPosition
 	 */
 	unsigned int col;
 
+	// Overload the '==' operator for this struct
+	bool operator==(const GridPosition& other) const {
+    return (row == other.row) && (col == other.col);
+  }
+
 };
 
 /**
@@ -89,6 +94,13 @@ struct SlidingPartition
 
 };
 
+struct Robot
+{
+	bool isAlive;
+	unsigned int num;
+	GridPosition location;
+	unsigned int assignedDoor;
+};
 
 
 #endif //	TYPES_AND_CONSTANTS_H
