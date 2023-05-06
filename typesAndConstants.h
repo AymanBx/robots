@@ -96,6 +96,7 @@ struct SlidingPartition
 
 struct Robot
 {
+	pthread_t thread_id;
 	bool isAlive;
 	unsigned int num;
 	GridPosition coordinates;

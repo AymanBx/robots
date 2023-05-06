@@ -22,8 +22,9 @@
 //	heart's content.
 #include <iostream>
 #include <sstream>
-#include <string>
+#include <string.h>
 #include <random>
+#include <thread>
 #include <vector>
 #include <map>
 #include <mutex>
@@ -129,11 +130,13 @@ SquareType **grid;
 // int** doorLoc;
 //	Or with a bit of retooling
 vector<int> doorAssign;
-vector<GridPosition> robotLoc;
 vector<GridPosition> boxLoc;
 vector<GridPosition> doorLoc;
 // A vector that holds all the filled-up cells
 vector<GridPosition> filledCells;
+
+// Vector that holds current robots
+vector<Robot> robots;
 
 // Random engine init
 random_device randDev;
@@ -216,7 +219,8 @@ int main(int argc, char **argv)
 	doorDist = uniform_int_distribution<int>(0, numDoors - 1);
 	rowDist = uniform_int_distribution<int>(1, numRows - 1);
 	colDist = uniform_int_distribution<int>(1, numCols - 1);
-
+	
+	// Create the threads for the robots.
 
 	//	Even though we extracted the relevant information from the argument
 	//	list, I still need to pass argc and argv to the front-end init
@@ -279,46 +283,45 @@ void initializeApplication(void)
 	initRobots();
 	doorAssign = {0, 1, 0, 0, 1};
 
-
-
-
-
 	//	For extra credit
 	// generatePartitions();
 }
 
 // multithreaded robots
 // Argument here was void, but I wanted to pass the robot as an argument
-void *robotFunc(Robot robot)
+void *robotFunc(void* param)
 {
+	
+	Robot* robot = (Robot*)param;
+	
 	bool isAlive = true;
-	int myIndex = robot.num;
-	int myDoorIndex = robot.assignedDoor;
+	int myIndex = robot->num;
+	int myDoorIndex = robot->assignedDoor;
 	GridPosition myDoor = doorLoc[myDoorIndex];
 	GridPosition myBox = boxLoc[myIndex];
 	//	do planning (generate list of robot commands (move/push)
-	GridPosition boxDistance = getDistance(robot.coordinates, myDoor);
+	GridPosition boxDistance = getDistance(robot->coordinates, myDoor);
 	// Create robot's pushing positions 
 	GridPosition robotPushingPosV = {myDoor.col, 0};
 	GridPosition robotPushingPosH = {0, myBox.row};
 
 
-	if (robot.isAlive && boxDistance.col < 0){
+	if (robot->isAlive && boxDistance.col < 0){
 		robotPushingPosH.col = boxLoc[myIndex].col + 1;
 	}
-	else if (robot.isAlive){
+	else if (robot->isAlive){
 		robotPushingPosH.col = boxLoc[myIndex].col - 1;
 	}
 	
-	if (robot.isAlive && boxDistance.row > 0){
+	if (robot->isAlive && boxDistance.row > 0){
 		robotPushingPosV.row = boxLoc[myIndex].row - 1;
 	}
-	else if (robot.isAlive){
+	else if (robot->isAlive){
 		robotPushingPosV.row = boxLoc[myIndex].row + 1;
 	}
 
-	GridPosition robotDistanceV = getDistance(robot.coordinates, robotPushingPosV);
-	GridPosition robotDistanceH = getDistance(robot.coordinates, robotPushingPosH);
+	GridPosition robotDistanceV = getDistance(robot->coordinates, robotPushingPosV);
+	GridPosition robotDistanceH = getDistance(robot->coordinates, robotPushingPosH);
 
 	while (isAlive)
 	{
@@ -357,15 +360,33 @@ void initDoors(){
 }
 
 void initRobots(){
-	while (robotLoc.size() < numBoxes){
+	while (robots.size() < numBoxes){
 		int row = rowDist(engine);
 		int col = colDist(engine);
 		GridPosition coordinates = {row, col};
 		bool available = checkAvailability(coordinates);
 		if (available){
-			robotLoc.push_back(coordinates);
+			Robot robot{
+				robots.size(),
+				true,
+				robots.size(),
+				coordinates,
+				0,
+				EAST
+			};
+			
+			robots.push_back(robot);
 			filledCells.push_back(coordinates);
 		}
+	}
+	
+	for(int i = 0; i < robots.size(); i++){
+		int err = pthread_create(&(robots[i].thread_id), NULL, robotFunc, &robots[i]);
+		if(err != 0){
+			printf("Couldn't create thread: %d. [%d]: %s\n", i, err, strerror(err));
+			exit(1);
+		}
+		numLiveThreads++;
 	}
 }
 
@@ -431,7 +452,7 @@ string printGrid(void)
 	for (int k = 0; k < numBoxes; k++)
 	{
 		strGrid[boxLoc[k].row][boxLoc[k].col] = boxStr[k];
-		strGrid[robotLoc[k].row][robotLoc[k].col] = robotStr[k];
+		strGrid[robots[k].coordinates.row][robots[k].coordinates.col] = robotStr[k];
 	}
 
 	ostringstream outStream;
