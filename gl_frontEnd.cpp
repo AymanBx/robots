@@ -46,20 +46,20 @@ extern int numLiveThreads;
 extern int robotSleepTime;
 //
 //	As explained in main.cpp, these will have to change from
-extern int robotLoc[][2];
-extern int boxLoc[][2];
-extern int doorAssign[];
-extern int doorLoc[][2];
+// extern int robotLoc[][2];
+// extern int boxLoc[][2];
+// extern int doorAssign[];
+// extern int doorLoc[][2];
 //	to
 //extern int** robotLoc;
 //extern int** boxLoc;
 //extern int** doorAssign;
 //extern int** doorLoc;
 //	Or with a bit of retooling
-//extern vector<int> doorAssign;
-//extern vector<GridPosition> robotLoc;
-//extern vector<GridPosition> boxLoc;
-//extern vector<GridPosition> doorLoc;
+extern vector<int> doorAssign;
+extern vector<GridPosition> robotLoc;
+extern vector<GridPosition> boxLoc;
+extern vector<GridPosition> doorLoc;
 
 extern vector<SlidingPartition> partitionList;
 
@@ -150,13 +150,13 @@ void displayGridPane(void)
 	for (int i=0; i<numBoxes; i++)
 	{
 		//	here I would test if the robot thread is still live
-		drawRobotAndBox(i, robotLoc[i][0], robotLoc[i][1], boxLoc[i][0], boxLoc[i][1], doorAssign[i]);
+		drawRobotAndBox(i, robotLoc[i].row, robotLoc[i].col, boxLoc[i].row, boxLoc[i].col, doorAssign[i]);
 	}
 
 	for (int i=0; i<numDoors; i++)
 	{
 		//	here I would test if the robot thread is still alive
-		drawDoor(i, doorLoc[i][0], doorLoc[i][1]);
+		drawDoor(i, doorLoc[i].row, doorLoc[i].col);
 	}
 
 	//	This call does nothing important. It only draws lines
