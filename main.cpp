@@ -56,6 +56,7 @@ bool checkAvailability(GridPosition coordinates);
 void initDoors();
 void initRobots();
 void initBoxes();
+GridPosition getDistance(GridPosition mover, GridPosition destination);
 
 #if 0
 //=================================================================
@@ -287,15 +288,42 @@ void initializeApplication(void)
 }
 
 // multithreaded robots
-void *robotFunc(void *)
+// Argument here was void, but I wanted to pass the robot as an argument
+void *robotFunc(Robot robot)
 {
 	bool isAlive = true;
-
+	int myIndex = robot.num;
+	int myDoorIndex = robot.assignedDoor;
+	GridPosition myDoor = doorLoc[myDoorIndex];
+	GridPosition myBox = boxLoc[myIndex];
 	//	do planning (generate list of robot commands (move/push)
+	GridPosition boxDistance = getDistance(robot.coordinates, myDoor);
+	// Create robot's pushing positions 
+	GridPosition robotPushingPosV = {myDoor.col, 0};
+	GridPosition robotPushingPosH = {0, myBox.row};
+
+
+	if (robot.isAlive && boxDistance.col < 0){
+		robotPushingPosH.col = boxLoc[myIndex].col + 1;
+	}
+	else if (robot.isAlive){
+		robotPushingPosH.col = boxLoc[myIndex].col - 1;
+	}
+	
+	if (robot.isAlive && boxDistance.row > 0){
+		robotPushingPosV.row = boxLoc[myIndex].row - 1;
+	}
+	else if (robot.isAlive){
+		robotPushingPosV.row = boxLoc[myIndex].row + 1;
+	}
+
+	GridPosition robotDistanceV = getDistance(robot.coordinates, robotPushingPosV);
+	GridPosition robotDistanceH = getDistance(robot.coordinates, robotPushingPosH);
 
 	while (isAlive)
 	{
 		//	execute one move
+
 
 		//		usleep(ROBOT_SLEEP_TIME);
 		//
@@ -352,6 +380,10 @@ void initBoxes(){
 			filledCells.push_back(coordinates);
 		}
 	}
+}
+
+GridPosition getDistance(GridPosition mover, GridPosition destination){
+	return {destination.col - mover.col, destination.row - mover.col};
 }
 
 #if 0

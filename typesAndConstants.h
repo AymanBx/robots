@@ -65,10 +65,10 @@ struct GridPosition
 {
 	/**	row index
 	 */
-	unsigned int row;
+	int row;
 	/** column index
 	 */
-	unsigned int col;
+	int col;
 
 	// Overload the '==' operator for this struct
 	bool operator==(const GridPosition& other) const {
@@ -98,8 +98,9 @@ struct Robot
 {
 	bool isAlive;
 	unsigned int num;
-	GridPosition location;
+	GridPosition coordinates;
 	unsigned int assignedDoor;
+	Direction dir;
 };
 
 
