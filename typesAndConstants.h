@@ -73,7 +73,12 @@ struct GridPosition
 	// Overload the '==' operator for this struct
 	bool operator==(const GridPosition& other) const {
     return (row == other.row) && (col == other.col);
-  }
+  	}
+
+	// Overload the '!=' operator for this struct
+  	bool operator!=(const GridPosition& other) const {
+    return (row != other.row) || (col != other.col);
+  	}
 
 };
 
@@ -101,7 +106,19 @@ struct Robot
 	GridPosition coordinates;
 	unsigned int assignedDoor;
 	Direction dir;
+	RobotMove moveType;
 };
 
+
+enum RobotMove{
+	moveHToH = 0,
+	moveVToH,
+	pushH,
+	pushV,
+	moveHToV,
+	moveVToV,
+	//
+	typesOfMoves
+};
 
 #endif //	TYPES_AND_CONSTANTS_H

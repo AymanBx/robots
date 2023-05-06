@@ -29,6 +29,7 @@
 #include <mutex>
 #include <cstdio>
 #include <cstdlib>
+#include <unistd.h>
 //
 //
 #include "glPlatform.h"
@@ -57,6 +58,8 @@ void initDoors();
 void initRobots();
 void initBoxes();
 GridPosition getDistance(GridPosition mover, GridPosition destination);
+void move(Robot robot, Direction dir);
+void push(Robot robot, Direction dir);
 
 #if 0
 //=================================================================
@@ -319,13 +322,127 @@ void *robotFunc(Robot robot)
 
 	GridPosition robotDistanceV = getDistance(robot.coordinates, robotPushingPosV);
 	GridPosition robotDistanceH = getDistance(robot.coordinates, robotPushingPosH);
+	GridPosition zero = {0,0};
+
+	// Set initial robot's first move
+	robot.moveType = moveHToH;
+	if (robotDistanceH.col > 0){
+		robot.dir = EAST;
+	}
+	else {
+		robot.dir = WEST;
+	}
 
 	while (isAlive)
 	{
-		//	execute one move
+		//	execute one move  (we have 6 options for that move)
+		switch (robot.moveType)
+		{
+		case moveHToH:
+			if (robotDistanceH.col == 0){
+				robot.moveType = moveVToH;
+				if (robotDistanceH.row > 0){
+					robot.dir = SOUTH;
+				}
+				else {
+					robot.dir = NORTH;
+				}
+			}
+			else {
+				move(robot, robot.dir);
+				robotDistanceH = getDistance(robot->coordinates, robotPushingPosH);
+			}	
+			break;
+
+		case moveVToH:
+			if (robotDistanceH.row == 0){
+				robot.moveType = pushH;
+				if (boxDistance.col > 0){
+					robot.dir = EAST;
+				}
+				else {
+					robot.dir = WEST;
+				}
+			}
+			else {
+				move(robot, robot.dir);
+				robotDistanceH = getDistance(robot->coordinates, robotPushingPosH);
+			}
+			break;
+
+		case pushH:
+			if (boxDistance.col == 0){
+				robot.moveType = moveVToV;
+				if (robotDistanceV.row > 0){
+					robot.dir = SOUTH;
+				}
+				else {
+					robot.dir = NORTH;
+				}
+			}
+			else {
+				move(robot, robot.dir);
+				boxDistance = getDistance(myBox, myDoor);
+			}
+			break;
 
 
-		//		usleep(ROBOT_SLEEP_TIME);
+		case moveVToV:
+			if (robotDistanceV.row == 0){
+				robot.moveType = moveHToV;
+				if (robotDistanceV.col > 0){
+					robot.dir = EAST;
+				}
+				else {
+					robot.dir = WEST;
+				}
+			}
+			else {
+				move(robot, robot.dir);
+				robotDistanceV = getDistance(robot->coordinates, robotPushingPosV);
+			}
+			break;
+
+		case moveHToV:
+			if (robotDistanceV.col == 0){
+				robot.moveType = pushV;
+				if (boxDistance.row > 0){
+					robot.dir = SOUTH;
+				}
+				else {
+					robot.dir = NORTH;
+				}
+			}
+			else {
+				move(robot, robot.dir);
+				robotDistanceV = getDistance(robot->coordinates, robotPushingPosV);
+			}
+			break;
+
+
+		case pushV:
+			if (boxDistance.row == 0){
+				if (boxDistance != zero){
+					robot.moveType = moveHToH;
+				}
+				else{
+					robot->isAlive = false;
+				}
+			}
+			else {
+				move(robot, robot.dir);
+				boxDistance = getDistance(myBox, myDoor);
+			}
+			break;
+		
+		default:
+				cerr<<"Something terribly wrong must've happened!!!" << endl;
+				exit(404);
+			break;
+		}
+
+
+		usleep(robotSleepTime);
 		//
 		//		isAlive = still commands in list of commands
 	}
@@ -384,6 +501,54 @@ void initBoxes(){
 
 GridPosition getDistance(GridPosition mover, GridPosition destination){
 	return {destination.col - mover.col, destination.row - mover.col};
+}
+
+void move(Robot robot, Direction dir)
+{
+	switch(dir){
+			case NORTH:
+				robot->coordinates.row-=1;
+				break;
+			case WEST:
+				robot->coordinates.col-=1;
+				break;
+			case SOUTH:
+				robot->coordinates.row+=1;
+				break;
+			case EAST:
+				robot->coordinates.col+=1;
+				break;
+			default:
+				cout<< "WRONG3"<< endl;
+				exit(404);
+				break;
+		}
+}
+
+void push(Robot robot, Direction dir)
+{
+	switch(dir){
+			case NORTH:
+				robot->coordinates.row-=1;
+				boxLoc[robot->num].row-=1;
+				break;
+			case WEST:
+				robot->coordinates.col-=1;
+				boxLoc[robot->num].col-=1;
+				break;
+			case SOUTH:
+				robot->coordinates.row+=1;
+				boxLoc[robot->num].row+=1;
+				break;
+			case EAST:
+				robot->coordinates.col+=1;
+				boxLoc[robot->num].col+=1;
+				break;
+			default:
+				cout<< "WRONG3"<< endl;
+				exit(404);
+				break;
+		}
 }
 
 #if 0
