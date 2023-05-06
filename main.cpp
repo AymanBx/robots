@@ -22,8 +22,9 @@
 //	heart's content.
 #include <iostream>
 #include <sstream>
-#include <string>
+#include <string.h>
 #include <random>
+#include <thread>
 #include <vector>
 #include <map>
 #include <mutex>
@@ -58,8 +59,8 @@ void initDoors();
 void initRobots();
 void initBoxes();
 GridPosition getDistance(GridPosition mover, GridPosition destination);
-void move(Robot robot, Direction dir);
-void push(Robot robot, Direction dir);
+void move(Robot* robot, Direction dir);
+void push(Robot* robot, Direction dir);
 
 #if 0
 //=================================================================
@@ -83,7 +84,7 @@ int numDoors = -1; //	The number of doors.
 int numLiveThreads = 0; //	the number of live robot threads
 
 //	robot sleep time between moves (in microseconds)
-int robotSleepTime = 100000;
+int robotSleepTime = 1000000;
 
 //	An array of C-string where you can store things you want displayed
 //	in the state pane to display (for debugging purposes?)
@@ -132,11 +133,13 @@ SquareType **grid;
 // int** doorLoc;
 //	Or with a bit of retooling
 vector<int> doorAssign;
-vector<GridPosition> robotLoc;
 vector<GridPosition> boxLoc;
 vector<GridPosition> doorLoc;
 // A vector that holds all the filled-up cells
 vector<GridPosition> filledCells;
+
+// Vector that holds current robots
+vector<Robot> robots;
 
 // Random engine init
 random_device randDev;
@@ -158,10 +161,6 @@ vector<SlidingPartition> partitionList;
 //	Change argument to 0.5 for equal probability of vertical and horizontal partitions
 //	0 for only horizontal, and 1 for only vertical
 bernoulli_distribution headsOrTails(1.0);
-
-
-
-
 
 #if 0
 //=================================================================
@@ -219,7 +218,8 @@ int main(int argc, char **argv)
 	doorDist = uniform_int_distribution<int>(0, numDoors - 1);
 	rowDist = uniform_int_distribution<int>(1, numRows - 1);
 	colDist = uniform_int_distribution<int>(1, numCols - 1);
-
+	
+	// Create the threads for the robots.
 
 	//	Even though we extracted the relevant information from the argument
 	//	list, I still need to pass argc and argv to the front-end init
@@ -282,106 +282,105 @@ void initializeApplication(void)
 	initRobots();
 	doorAssign = {0, 1, 0, 0, 1};
 
-
-
-
-
 	//	For extra credit
 	// generatePartitions();
 }
 
 // multithreaded robots
 // Argument here was void, but I wanted to pass the robot as an argument
-void *robotFunc(Robot robot)
+void *robotFunc(void* param)
 {
+	
+	Robot* robot = (Robot*)param;
+	
 	bool isAlive = true;
-	int myIndex = robot.num;
-	int myDoorIndex = robot.assignedDoor;
+	int myIndex = robot->num;
+	int myDoorIndex = robot->assignedDoor;
 	GridPosition myDoor = doorLoc[myDoorIndex];
 	GridPosition myBox = boxLoc[myIndex];
 	//	do planning (generate list of robot commands (move/push)
-	GridPosition boxDistance = getDistance(robot.coordinates, myDoor);
+	GridPosition boxDistance = getDistance(robot->coordinates, myDoor);
 	// Create robot's pushing positions 
 	GridPosition robotPushingPosV = {myDoor.col, 0};
 	GridPosition robotPushingPosH = {0, myBox.row};
 
 
-	if (robot.isAlive && boxDistance.col < 0){
+	if (robot->isAlive && boxDistance.col < 0){
 		robotPushingPosH.col = boxLoc[myIndex].col + 1;
 	}
-	else if (robot.isAlive){
+	else if (robot->isAlive){
 		robotPushingPosH.col = boxLoc[myIndex].col - 1;
 	}
 	
-	if (robot.isAlive && boxDistance.row > 0){
+	if (robot->isAlive && boxDistance.row > 0){
 		robotPushingPosV.row = boxLoc[myIndex].row - 1;
 	}
-	else if (robot.isAlive){
+	else if (robot->isAlive){
 		robotPushingPosV.row = boxLoc[myIndex].row + 1;
 	}
 
-	GridPosition robotDistanceV = getDistance(robot.coordinates, robotPushingPosV);
-	GridPosition robotDistanceH = getDistance(robot.coordinates, robotPushingPosH);
+	GridPosition robotDistanceV = getDistance(robot->coordinates, robotPushingPosV);
+	GridPosition robotDistanceH = getDistance(robot->coordinates, robotPushingPosH);
 	GridPosition zero = {0,0};
 
 	// Set initial robot's first move
-	robot.moveType = moveHToH;
+	robot->moveType = moveHToH;
 	if (robotDistanceH.col > 0){
-		robot.dir = EAST;
+		robot->dir = EAST;
 	}
 	else {
-		robot.dir = WEST;
+		robot->dir = WEST;
 	}
 
 	while (isAlive)
 	{
 		//	execute one move  (we have 6 options for that move)
-		switch (robot.moveType)
+		switch (robot->moveType)
 		{
 		case moveHToH:
 			if (robotDistanceH.col == 0){
-				robot.moveType = moveVToH;
+				robot->moveType = moveVToH;
 				if (robotDistanceH.row > 0){
-					robot.dir = SOUTH;
+					robot->dir = SOUTH;
 				}
 				else {
-					robot.dir = NORTH;
+					robot->dir = NORTH;
 				}
 			}
 			else {
-				move(robot, robot.dir);
+				move(robot, robot->dir);
 				robotDistanceH = getDistance(robot->coordinates, robotPushingPosH);
 			}	
 			break;
 
 		case moveVToH:
 			if (robotDistanceH.row == 0){
-				robot.moveType = pushH;
+				robot->moveType = pushH;
 				if (boxDistance.col > 0){
-					robot.dir = EAST;
+					robot->dir = EAST;
 				}
 				else {
-					robot.dir = WEST;
+					robot->dir = WEST;
 				}
 			}
 			else {
-				move(robot, robot.dir);
+				move(robot, robot->dir);
 				robotDistanceH = getDistance(robot->coordinates, robotPushingPosH);
 			}
 			break;
 
 		case pushH:
 			if (boxDistance.col == 0){
-				robot.moveType = moveVToV;
+				robot->moveType = moveVToV;
 				if (robotDistanceV.row > 0){
-					robot.dir = SOUTH;
+					robot->dir = SOUTH;
 				}
 				else {
-					robot.dir = NORTH;
+					robot->dir = NORTH;
 				}
 			}
 			else {
-				move(robot, robot.dir);
+				move(robot, robot->dir);
 				boxDistance = getDistance(myBox, myDoor);
 			}
 			break;
@@ -389,32 +388,32 @@ void *robotFunc(Robot robot)
 
 		case moveVToV:
 			if (robotDistanceV.row == 0){
-				robot.moveType = moveHToV;
+				robot->moveType = moveHToV;
 				if (robotDistanceV.col > 0){
-					robot.dir = EAST;
+					robot->dir = EAST;
 				}
 				else {
-					robot.dir = WEST;
+					robot->dir = WEST;
 				}
 			}
 			else {
-				move(robot, robot.dir);
+				move(robot, robot->dir);
 				robotDistanceV = getDistance(robot->coordinates, robotPushingPosV);
 			}
 			break;
 
 		case moveHToV:
 			if (robotDistanceV.col == 0){
-				robot.moveType = pushV;
+				robot->moveType = pushV;
 				if (boxDistance.row > 0){
-					robot.dir = SOUTH;
+					robot->dir = SOUTH;
 				}
 				else {
-					robot.dir = NORTH;
+					robot->dir = NORTH;
 				}
 			}
 			else {
-				move(robot, robot.dir);
+				move(robot, robot->dir);
 				robotDistanceV = getDistance(robot->coordinates, robotPushingPosV);
 			}
 			break;
@@ -423,14 +422,14 @@ void *robotFunc(Robot robot)
 		case pushV:
 			if (boxDistance.row == 0){
 				if (boxDistance != zero){
-					robot.moveType = moveHToH;
+					robot->moveType = moveHToH;
 				}
 				else{
 					robot->isAlive = false;
 				}
 			}
 			else {
-				move(robot, robot.dir);
+				move(robot, robot->dir);
 				boxDistance = getDistance(myBox, myDoor);
 			}
 			break;
@@ -474,15 +473,33 @@ void initDoors(){
 }
 
 void initRobots(){
-	while (robotLoc.size() < numBoxes){
+	while (robots.size() < numBoxes){
 		int row = rowDist(engine);
 		int col = colDist(engine);
 		GridPosition coordinates = {row, col};
 		bool available = checkAvailability(coordinates);
 		if (available){
-			robotLoc.push_back(coordinates);
+			Robot robot{
+				robots.size(),
+				true,
+				robots.size(),
+				coordinates,
+				0,
+				EAST
+			};
+			
+			robots.push_back(robot);
 			filledCells.push_back(coordinates);
 		}
+	}
+	
+	for(int i = 0; i < robots.size(); i++){
+		int err = pthread_create(&(robots[i].thread_id), NULL, robotFunc, &robots[i]);
+		if(err != 0){
+			printf("Couldn't create thread: %d. [%d]: %s\n", i, err, strerror(err));
+			exit(1);
+		}
+		numLiveThreads++;
 	}
 }
 
@@ -503,7 +520,7 @@ GridPosition getDistance(GridPosition mover, GridPosition destination){
 	return {destination.col - mover.col, destination.row - mover.col};
 }
 
-void move(Robot robot, Direction dir)
+void move(Robot* robot, Direction dir)
 {
 	switch(dir){
 			case NORTH:
@@ -525,7 +542,7 @@ void move(Robot robot, Direction dir)
 		}
 }
 
-void push(Robot robot, Direction dir)
+void push(Robot* robot, Direction dir)
 {
 	switch(dir){
 			case NORTH:
@@ -596,7 +613,7 @@ string printGrid(void)
 	for (int k = 0; k < numBoxes; k++)
 	{
 		strGrid[boxLoc[k].row][boxLoc[k].col] = boxStr[k];
-		strGrid[robotLoc[k].row][robotLoc[k].col] = robotStr[k];
+		strGrid[robots[k].coordinates.row][robots[k].coordinates.col] = robotStr[k];
 	}
 
 	ostringstream outStream;

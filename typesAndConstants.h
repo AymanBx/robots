@@ -9,6 +9,7 @@
 #define TYPES_AND_CONSTANTS_H
 
 #include <vector>
+#include <thread>
 
 //===============================================
 //	Application-wide constants
@@ -99,17 +100,6 @@ struct SlidingPartition
 
 };
 
-struct Robot
-{
-	bool isAlive;
-	unsigned int num;
-	GridPosition coordinates;
-	unsigned int assignedDoor;
-	Direction dir;
-	RobotMove moveType;
-};
-
-
 enum RobotMove{
 	moveHToH = 0,
 	moveVToH,
@@ -119,6 +109,17 @@ enum RobotMove{
 	moveVToV,
 	//
 	typesOfMoves
+};
+
+struct Robot
+{
+	pthread_t thread_id;
+	bool isAlive;
+	unsigned int num;
+	GridPosition coordinates;
+	unsigned int assignedDoor;
+	Direction dir;
+	RobotMove moveType;
 };
 
 #endif //	TYPES_AND_CONSTANTS_H
