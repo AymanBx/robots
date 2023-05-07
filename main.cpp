@@ -492,8 +492,8 @@ void initRobots(){
 		bool available = checkAvailability(coordinates);
 		if (available){
 			Robot robot{
-				robots.size(),
 				true,
+				robots.size(),
 				robots.size(),
 				coordinates,
 				robots.size()%2

@@ -119,7 +119,7 @@ struct Robot
 {
 	bool isAlive;
 	unsigned int num;
-	pthread_t thread_id
+	pthread_t thread_id;
 	GridPosition coordinates;
 	unsigned int assignedDoor;
 	Direction dir;
