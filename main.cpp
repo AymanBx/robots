@@ -462,13 +462,12 @@ void *robotFunc(void* param)
 }
 
 bool checkAvailability(GridPosition coordinates){
-	bool available = true;
 	for (int i = 0; i < filledCells.size(), i++;){
 		if (coordinates == filledCells[i]){
-			available = false;
+			return false;
 		}
 	}
-	return available;
+	return true;
 }
 
 void initDoors(){
