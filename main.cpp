@@ -280,7 +280,7 @@ void initializeApplication(void)
 	initDoors();
 	initBoxes();
 	initRobots();
-	doorAssign = {0, 1, 0, 0, 1};
+	doorAssign = {0, 1, 0, 1, 0};
 
 	//	For extra credit
 	// generatePartitions();
@@ -496,7 +496,7 @@ void initRobots(){
 				true,
 				robots.size(),
 				coordinates,
-				0,
+				robots.size()%2,
 				EAST
 			};
 			
