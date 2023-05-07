@@ -496,8 +496,7 @@ void initRobots(){
 				true,
 				robots.size(),
 				coordinates,
-				robots.size()%2,
-				EAST
+				robots.size()%2
 			};
 			
 			robots.push_back(robot);
