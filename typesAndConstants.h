@@ -60,6 +60,19 @@ enum class SquareType
 
 };
 
+
+enum RobotMove{
+	moveHToH = 0,
+	moveVToH,
+	pushH,
+	moveVToV,
+	moveHToV,
+	pushV,
+	//
+	typesOfMoves
+};
+
+
 /**	Data type to store the position of *things* on the grid
  */
 struct GridPosition
@@ -104,12 +117,13 @@ enum RobotMove{
 	moveHToH = 0,
 	moveVToH,
 	pushH,
-	pushV,
-	moveHToV,
 	moveVToV,
+	moveHToV,
+	pushV,
 	//
 	typesOfMoves
 };
+
 
 struct Robot
 {
