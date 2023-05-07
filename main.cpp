@@ -360,6 +360,7 @@ void *robotFunc(void* param)
 
 		case moveVToH:
 			if (robotDistanceH.row == 0){
+				cout << "In here?" << endl;
 				robot->moveType = pushH;
 				if (boxDistance.col > 0){
 					robot->dir = EAST;
@@ -387,7 +388,7 @@ void *robotFunc(void* param)
 				}
 			}
 			else {
-				move(robot, robot->dir);
+				push(robot, robot->dir);
 				cout<< "Current robot location: " << robot->coordinates.row << "," << robot->coordinates.col << endl;
 				boxDistance = getDistance(boxLoc[myIndex], myDoor);
 			}
@@ -439,7 +440,7 @@ void *robotFunc(void* param)
 				}
 			}
 			else {
-				move(robot, robot->dir);
+				push(robot, robot->dir);
 				cout<< "Current robot location: " << robot->coordinates.row << "," << robot->coordinates.col << endl;
 				boxDistance = getDistance(boxLoc[myIndex], myDoor);
 			}
@@ -504,7 +505,7 @@ void initRobots(){
 		}
 	}
 	
-	for(int i = 0; i < 1; i++){
+	for(int i = 0; i < robots.size(); i++){
 		int err = pthread_create(&(robots[i].thread_id), NULL, robotFunc, &robots[i]);
 		if(err != 0){
 			printf("Couldn't create thread: %d. [%d]: %s\n", i, err, strerror(err));
