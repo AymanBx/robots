@@ -57,7 +57,7 @@ extern int robotSleepTime;
 //extern int** doorLoc;
 //	Or with a bit of retooling
 extern vector<int> doorAssign;
-extern vector<GridPosition> robotLoc;
+extern vector<Robot> robots;
 extern vector<GridPosition> boxLoc;
 extern vector<GridPosition> doorLoc;
 
@@ -150,7 +150,7 @@ void displayGridPane(void)
 	for (int i=0; i<numBoxes; i++)
 	{
 		//	here I would test if the robot thread is still live
-		drawRobotAndBox(i, robotLoc[i].row, robotLoc[i].col, boxLoc[i].row, boxLoc[i].col, doorAssign[i]);
+		drawRobotAndBox(i, robots[i].coordinates.row, robots[i].coordinates.col, boxLoc[i].row, boxLoc[i].col, doorAssign[i]);
 	}
 
 	for (int i=0; i<numDoors; i++)
