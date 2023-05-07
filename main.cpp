@@ -277,6 +277,9 @@ void initializeApplication(void)
 	//	of the doors, boxes, and robots, and create threads (not
 	//	necessarily in that order).
 	//---------------------------------------------------------------
+	
+	srand(15);
+	
 	initDoors();
 	initBoxes();
 	initRobots();
@@ -499,8 +502,8 @@ bool checkAvailability(GridPosition coordinates){
 
 void initDoors(){
 	while (doorLoc.size() < numDoors){
-		int row = rowDist(engine);
-		int col = colDist(engine);
+		int row = ((float)random()/(float)RAND_MAX) * numRows;
+		int col = ((float)random()/(float)RAND_MAX) * numCols;
 		GridPosition coordinates = {row, col};
 		bool available = checkAvailability(coordinates);
 		if (available){
@@ -512,8 +515,8 @@ void initDoors(){
 
 void initBoxes(){
 	while (boxLoc.size() < numBoxes){
-		int row = boxRowDist(engine);
-		int col = boxColDist(engine);
+		int row = ((float)random()/(float)RAND_MAX) * numRows;
+		int col = ((float)random()/(float)RAND_MAX) * numCols;
 		GridPosition coordinates = {row, col};
 		bool available = checkAvailability(coordinates);
 		if (available){
@@ -525,8 +528,8 @@ void initBoxes(){
 
 void initRobots(){
 	while (robots.size() < 1){
-		int row = rowDist(engine);
-		int col = colDist(engine);
+		int row = ((float)random()/(float)RAND_MAX) * numRows;
+		int col = ((float)random()/(float)RAND_MAX) * numCols;
 		GridPosition coordinates = {row, col};
 		bool available = checkAvailability(coordinates);
 		if (available){
