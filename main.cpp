@@ -381,7 +381,7 @@ void *robotFunc(void* param)
 			}
 			else {
 				move(robot, robot->dir);
-				boxDistance = getDistance(myBox, myDoor);
+				boxDistance = getDistance(boxLoc[myIndex], myDoor);
 			}
 			break;
 
@@ -425,12 +425,12 @@ void *robotFunc(void* param)
 					robot->moveType = moveHToH;
 				}
 				else{
-					robot.isAlive = false;
+					robot->isAlive = false;
 				}
 			}
 			else {
 				move(robot, robot->dir);
-				boxDistance = getDistance(myBox, myDoor);
+				boxDistance = getDistance(boxLoc[myIndex], myDoor);
 			}
 			break;
 		
@@ -524,16 +524,16 @@ void move(Robot* robot, Direction dir)
 {
 	switch(dir){
 			case NORTH:
-				robot.coordinates.row-=1;
+				robot->coordinates.row-=1;
 				break;
 			case WEST:
-				robot.coordinates.col-=1;
+				robot->coordinates.col-=1;
 				break;
 			case SOUTH:
-				robot.coordinates.row+=1;
+				robot->coordinates.row+=1;
 				break;
 			case EAST:
-				robot.coordinates.col+=1;
+				robot->coordinates.col+=1;
 				break;
 			default:
 				cout<< "WRONG3"<< endl;
@@ -546,20 +546,20 @@ void push(Robot* robot, Direction dir)
 {
 	switch(dir){
 			case NORTH:
-				robot.coordinates.row-=1;
-				boxLoc[robot.num].row-=1;
+				robot->coordinates.row-=1;
+				boxLoc[robot->num].row-=1;
 				break;
 			case WEST:
-				robot.coordinates.col-=1;
-				boxLoc[robot.num].col-=1;
+				robot->coordinates.col-=1;
+				boxLoc[robot->num].col-=1;
 				break;
 			case SOUTH:
-				robot.coordinates.row+=1;
-				boxLoc[robot.num].row+=1;
+				robot->coordinates.row+=1;
+				boxLoc[robot->num].row+=1;
 				break;
 			case EAST:
-				robot.coordinates.col+=1;
-				boxLoc[robot.num].col+=1;
+				robot->coordinates.col+=1;
+				boxLoc[robot->num].col+=1;
 				break;
 			default:
 				cout<< "WRONG3"<< endl;
