@@ -117,9 +117,9 @@ struct SlidingPartition
 
 struct Robot
 {
-	pthread_t thread_id;
 	bool isAlive;
 	unsigned int num;
+	pthread_t thread_id
 	GridPosition coordinates;
 	unsigned int assignedDoor;
 	Direction dir;
