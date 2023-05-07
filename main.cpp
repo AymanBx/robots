@@ -323,6 +323,7 @@ void *robotFunc(Robot robot)
 	GridPosition robotDistanceV = getDistance(robot.coordinates, robotPushingPosV);
 	GridPosition robotDistanceH = getDistance(robot.coordinates, robotPushingPosH);
 	GridPosition zero = {0,0};
+	
 
 	// Set initial robot's first move
 	robot.moveType = moveHToH;
@@ -332,7 +333,152 @@ void *robotFunc(Robot robot)
 	else {
 		robot.dir = WEST;
 	}
-
+	
+	vector<int> ops; // 0 left, 1 up, 2 right, 3 down
+	
+	bool left = robotDistanceH.col < 0 ? true : false;
+	bool up = robotDistanceH.row < 0 ? true : false;
+	
+	for(int i = 0; i < abs(robotDistanceH.col); i++){
+		if(left){
+			ops.push_back(0);
+		}
+		else{
+			ops.push_back(2);
+		}
+	}
+	
+	for(int i = 0; i < abs(robotDistanceH.row); i++){
+		if(up){
+			ops.push_back(1);
+		}
+		else{
+			ops.push_back(3);
+		}
+	}
+	
+	GridPosition robotDistanceV = getDistance({robot->coordinates.col + robotDistanceH.col, robot->coordinates.row + robotDistanceH.row}, robotPushingPosV);
+	
+	bool left = robotDistanceV.col < 0 ? true : false;
+	bool up = robotDistanceV.row < 0 ? true : false;
+	
+	for(int i = 0; i < abs(robotDistanceV.col) - 1; i++){
+		if(left){
+			ops.push_back(0);
+		}
+		else{
+			ops.push_back(2);
+		}
+	}
+	
+	if(up){
+		ops.push_back(1);
+	}
+	else{
+		ops.push_back(3);
+	}
+	
+	if(left){
+		ops.push_back(0);
+	}
+	else{
+		ops.push_back(2);
+	}
+	
+	GridPosition toDoor = getDistance(robotDistanceV, doorLoc[robot->num]);
+	
+	bool up = toDoor.row < 0 ? true : false;
+	
+	for(int i = 0; i < abs(toDoor.row) - 1; i++){
+		if(up){
+			ops.push_back(1);
+		}
+		else{
+			ops.push_back(3);
+		}
+	}
+	
+	int index;
+	while(isAlive){
+		switch(ops[index]){
+			case 0:
+			
+			GridPosition toMove = {
+				robot->coordinates.col - 1,
+				robot->coordinates.row
+			}
+			
+			if(something_is_here(toMove)){
+				continue;
+			}
+			
+			
+			
+			robot->coordinates = toMove;
+			
+			if(boxLoc[robot->num].col == robot->coordinates.col){
+				boxLoc[robot->num].col -= 1;
+			}
+			
+			index++;
+			break;
+			case 2:
+			
+			GridPosition toMove = {
+				robot->coordinates.col - 1,
+				robot->coordinates.row
+			}
+			
+			if(something_is_here(toMove)){
+				continue;
+			}
+			
+			robot->coordinates = toMove;
+			
+			if(boxLoc[robot->num].col == robot->coordinates.col){
+				boxLoc[robot->num].col += 1;
+			}
+			
+			index++;
+			
+			break;
+			case 1:
+			
+			GridPosition toMove = {
+				robot->coordinates.col - 1,
+				robot->coordinates.row
+			}
+			
+			if(something_is_here(toMove)){
+				continue;
+			}
+			
+			robot->coordinates = toMove;
+			
+			if(boxLoc[robot->num].col == robot->coordinates.col){
+				boxLoc[robot->num].col -= 1;
+			}
+			
+			index++;
+			
+			break;
+			case 3:
+			if(something_is_here(robot->coordinates)){
+				continue;
+			}
+			
+			robot->coordinates.col -= 1;
+			if(boxLoc[robot->num].col == robot->coordinates.col){
+				boxLoc[robot->num].col -= 1;
+			}
+			
+			index++;
+			
+			break;
+		}
+	}
+	
+	
 	while (isAlive)
 	{
 		//	execute one move  (we have 6 options for that move)
@@ -500,7 +646,7 @@ void initBoxes(){
 }
 
 GridPosition getDistance(GridPosition mover, GridPosition destination){
-	return {destination.col - mover.col, destination.row - mover.col};
+	return {destination.col - mover.col, destination.row - mover.row};
 }
 
 void move(Robot robot, Direction dir)
