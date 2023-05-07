@@ -301,22 +301,22 @@ void *robotFunc(void* param)
 	//	do planning (generate list of robot commands (move/push)
 	GridPosition boxDistance = getDistance(robot->coordinates, myDoor);
 	// Create robot's pushing positions 
-	GridPosition robotPushingPosV = {myDoor.col, 0};
-	GridPosition robotPushingPosH = {0, myBox.row};
+	GridPosition robotPushingPosH = {myBox.row, 0};
+	GridPosition robotPushingPosV = {0, myDoor.col};
 
 
 	if (robot->isAlive && boxDistance.col < 0){
-		robotPushingPosH.col = boxLoc[myIndex].col + 1;
+		robotPushingPosH.col = myBox.col + 1;
 	}
 	else if (robot->isAlive){
-		robotPushingPosH.col = boxLoc[myIndex].col - 1;
+		robotPushingPosH.col = myBox.col - 1;
 	}
 	
 	if (robot->isAlive && boxDistance.row > 0){
-		robotPushingPosV.row = boxLoc[myIndex].row - 1;
+		robotPushingPosV.row = myBox.row - 1;
 	}
 	else if (robot->isAlive){
-		robotPushingPosV.row = boxLoc[myIndex].row + 1;
+		robotPushingPosV.row = myBox.row + 1;
 	}
 
 	GridPosition robotDistanceV = getDistance(robot->coordinates, robotPushingPosV);
@@ -332,6 +332,9 @@ void *robotFunc(void* param)
 		robot->dir = WEST;
 	}
 
+	cout<< "Current robot location: " << robot->coordinates.row << "," << robot->coordinates.col << endl;
+	cout<< "Current posH location: " << robotPushingPosH.row << "," << robotPushingPosH.col << endl;
+	cout<< "Current posV location: " << robotPushingPosV.row << "," << robotPushingPosV.col << endl;
 	while (isAlive)
 	{
 		//	execute one move  (we have 6 options for that move)
@@ -349,7 +352,9 @@ void *robotFunc(void* param)
 			}
 			else {
 				move(robot, robot->dir);
+				cout<< "Current robot location: " << robot->coordinates.row << "," << robot->coordinates.col << endl;
 				robotDistanceH = getDistance(robot->coordinates, robotPushingPosH);
+				cout<< "Current Distance: " << robotDistanceH.row << "," << robotDistanceH.col << endl;
 			}	
 			break;
 
@@ -365,7 +370,9 @@ void *robotFunc(void* param)
 			}
 			else {
 				move(robot, robot->dir);
+				cout<< "Current robot location: " << robot->coordinates.row << "," << robot->coordinates.col << endl;
 				robotDistanceH = getDistance(robot->coordinates, robotPushingPosH);
+				cout<< "Current Distance: " << robotDistanceH.row << "," << robotDistanceH.col << endl;
 			}
 			break;
 
@@ -381,6 +388,7 @@ void *robotFunc(void* param)
 			}
 			else {
 				move(robot, robot->dir);
+				cout<< "Current robot location: " << robot->coordinates.row << "," << robot->coordinates.col << endl;
 				boxDistance = getDistance(boxLoc[myIndex], myDoor);
 			}
 			break;
@@ -398,6 +406,7 @@ void *robotFunc(void* param)
 			}
 			else {
 				move(robot, robot->dir);
+				cout<< "Current robot location: " << robot->coordinates.row << "," << robot->coordinates.col << endl;
 				robotDistanceV = getDistance(robot->coordinates, robotPushingPosV);
 			}
 			break;
@@ -414,6 +423,7 @@ void *robotFunc(void* param)
 			}
 			else {
 				move(robot, robot->dir);
+				cout<< "Current robot location: " << robot->coordinates.row << "," << robot->coordinates.col << endl;
 				robotDistanceV = getDistance(robot->coordinates, robotPushingPosV);
 			}
 			break;
@@ -430,6 +440,7 @@ void *robotFunc(void* param)
 			}
 			else {
 				move(robot, robot->dir);
+				cout<< "Current robot location: " << robot->coordinates.row << "," << robot->coordinates.col << endl;
 				boxDistance = getDistance(boxLoc[myIndex], myDoor);
 			}
 			break;
@@ -493,7 +504,7 @@ void initRobots(){
 		}
 	}
 	
-	for(int i = 0; i < robots.size(); i++){
+	for(int i = 0; i < 1; i++){
 		int err = pthread_create(&(robots[i].thread_id), NULL, robotFunc, &robots[i]);
 		if(err != 0){
 			printf("Couldn't create thread: %d. [%d]: %s\n", i, err, strerror(err));
@@ -517,11 +528,12 @@ void initBoxes(){
 }
 
 GridPosition getDistance(GridPosition mover, GridPosition destination){
-	return {destination.col - mover.col, destination.row - mover.row};
+	return {destination.row - mover.row, destination.col - mover.col};
 }
 
 void move(Robot* robot, Direction dir)
 {
+	cout<< "Moving!" << endl;
 	switch(dir){
 			case NORTH:
 				robot->coordinates.row-=1;
@@ -544,6 +556,7 @@ void move(Robot* robot, Direction dir)
 
 void push(Robot* robot, Direction dir)
 {
+	cout<< "Pushing!" << endl;
 	switch(dir){
 			case NORTH:
 				robot->coordinates.row-=1;
