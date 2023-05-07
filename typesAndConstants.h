@@ -113,16 +113,6 @@ struct SlidingPartition
 
 };
 
-enum RobotMove{
-	moveHToH = 0,
-	moveVToH,
-	pushH,
-	moveVToV,
-	moveHToV,
-	pushV,
-	//
-	typesOfMoves
-};
 
 
 struct Robot
