@@ -299,7 +299,7 @@ void *robotFunc(void* param)
 	GridPosition myDoor = doorLoc[myDoorIndex];
 	GridPosition myBox = boxLoc[myIndex];
 	//	do planning (generate list of robot commands (move/push)
-	GridPosition boxDistance = getDistance(robot->coordinates, myDoor);
+	GridPosition boxDistance = getDistance(myBox, myDoor);
 	// Create robot's pushing positions 
 	GridPosition robotPushingPosH = {myBox.row, 0};
 	GridPosition robotPushingPosV = {0, myDoor.col};
