@@ -278,7 +278,7 @@ void initializeApplication(void)
 	//	necessarily in that order).
 	//---------------------------------------------------------------
 	
-	srand(15);
+	srand(16);
 	
 	initDoors();
 	initBoxes();
@@ -305,7 +305,7 @@ void *robotFunc(void* param)
 	GridPosition myBox = boxLoc[myIndex];
 	
 	//	do planning (generate list of robot commands (move/push)
-	GridPosition boxDistance = getDistance(robot->coordinates, myBox);
+	GridPosition boxDistance = getDistance(myDoor, myBox);
 	// Create robot's pushing positions 
 	GridPosition robotPushingPosH;// = {myBox.row, 0};
 	
@@ -315,17 +315,17 @@ void *robotFunc(void* param)
 	
 	robotPushingPosV.col = myDoor.col;
 
-	if (robot->isAlive && boxDistance.col < 0){
+	if (boxDistance.col < 0){
 		robotPushingPosH.col = myBox.col + 1;
 	}
-	else if (robot->isAlive){
+	else {
 		robotPushingPosH.col = myBox.col - 1;
 	}
 	
-	if (robot->isAlive && boxDistance.row > 0){
+	if (boxDistance.row > 0){
 		robotPushingPosV.row = myBox.row - 1;
 	}
-	else if (robot->isAlive){
+	else {
 		robotPushingPosV.row = myBox.row + 1;
 	}
 
@@ -340,11 +340,11 @@ void *robotFunc(void* param)
 	bool up = robotDistanceH.row < 0 ? true : false;
 	
 	for(int i = 0; i < abs(robotDistanceH.col); i++){
-		if(up){
-			ops.push_back(1);
+		if(left){
+			ops.push_back(0);
 		}
 		else{
-			ops.push_back(3);
+			ops.push_back(2);
 		}
 	}
 	
@@ -358,12 +358,14 @@ void *robotFunc(void* param)
 	}
 	
 	//cout << robot->coordinates.row << " " << robot->coordinates.col << endl;
-	GridPosition robotDistanceV = getDistance({robot->coordinates.row + robotDistanceH.row, robot->coordinates.col + robotDistanceH.col}, robotPushingPosV);
+	GridPosition robotDistanceV = getDistance(myBox, robotPushingPosV);
 	
 	//cout << robotDistanceV.row << " " << robotDistanceV.col << endl;
 
 	left = robotDistanceV.col < 0 ? true : false;
 	up = robotDistanceV.row < 0 ? true : false;
+	
+	GridPosition toDoor = getDistance(robotDistanceV, doorLoc[robot->assignedDoor]);
 	
 	for(int i = 0; i < abs(robotDistanceV.col) - 1; i++){
 		if(left){
@@ -371,6 +373,15 @@ void *robotFunc(void* param)
 		}
 		else{
 			ops.push_back(2);
+		}
+	}
+	
+	for(int i = 0; i < abs(robotDistanceV.row); i++){
+		if(up){
+			ops.push_back(1);
+		}
+		else{
+			ops.push_back(3);
 		}
 	}
 	
@@ -388,11 +399,12 @@ void *robotFunc(void* param)
 		ops.push_back(2);
 	}
 	
-	GridPosition toDoor = getDistance(robotDistanceV, doorLoc[robot->assignedDoor]);
 	
 	up = toDoor.row < 0 ? true : false;
 	
-	for(int i = 0; i < abs(toDoor.row) - 1; i++){
+	cout << toDoor.col << ", " << toDoor.row << endl;
+	
+	for(int i = 0; i < abs(toDoor.col); i++){
 		if(up){
 			ops.push_back(1);
 		}
@@ -401,13 +413,17 @@ void *robotFunc(void* param)
 		}
 	}
 	
+	cout << robot->num << ": ";
+	
 	for(int i = 0; i < ops.size(); i++){
 		cout << ops[i] << ", ";
 	}
 	cout << endl;
 	
-	int index;
+	int index = 0;
 	while(isAlive){
+		
+		usleep(100000000000);
 		
 		GridPosition toMove;
 		
@@ -485,7 +501,8 @@ void *robotFunc(void* param)
 			break;
 		}
 		
-		usleep(10000000000);
+		if(index == ops.size()) break;
+		
 	}
 
 	return nullptr;
@@ -527,7 +544,7 @@ void initBoxes(){
 }
 
 void initRobots(){
-	while (robots.size() < 1){
+	while (robots.size() < numBoxes){
 		int row = ((float)random()/(float)RAND_MAX) * numRows;
 		int col = ((float)random()/(float)RAND_MAX) * numCols;
 		GridPosition coordinates = {row, col};
@@ -543,6 +560,7 @@ void initRobots(){
 			
 			robots.push_back(robot);
 			filledCells.push_back(coordinates);
+			
 		}
 	}
 	
@@ -553,6 +571,7 @@ void initRobots(){
 			exit(1);
 		}
 		numLiveThreads++;
+		usleep(10000);
 	}
 }
 
