@@ -22,6 +22,7 @@
 //	heart's content.
 #include <iostream>
 #include <sstream>
+#include <fstream>
 #include <string.h>
 #include <random>
 #include <thread>
@@ -156,6 +157,8 @@ uniform_int_distribution<int> colDist;
 mutex gridLock;
 mutex outputLock;
 
+ofstream output("robotSimulOut.txt");
+
 //	For extra credit section
 vector<SlidingPartition> partitionList;
 //	Change argument to 0.5 for equal probability of vertical and horizontal partitions
@@ -211,6 +214,8 @@ int main(int argc, char **argv)
 		exit(404);
 	}
     cout <<"Check 3" << endl;
+	
+	output << numRows << " " << numCols << " " << numBoxes << " " << numDoors << " " << endl << endl;
 
 	// Initialize the random ranges
 	boxRowDist = uniform_int_distribution<int>(1, numRows - 2);
@@ -257,6 +262,7 @@ void cleanupAndQuit()
 	for (int k = 0; k < MAX_NUM_MESSAGES; k++)
 		delete[] message[k];
 	delete[] message;
+	
 
 	exit(0);
 }
@@ -477,10 +483,27 @@ void initDoors(){
 		GridPosition coordinates = {row, col};
 		bool available = checkAvailability(coordinates);
 		if (available){
+			output << "door " << doorLoc.size() << ": " << "(" << row << ", " << col << ")" << endl;
 			doorLoc.push_back(coordinates);
 			filledCells.push_back(coordinates);
 		}
 	}
+	output << endl;
+}
+
+void initBoxes(){
+	while (boxLoc.size() < numBoxes){
+		int row = boxRowDist(engine);
+		int col = boxColDist(engine);
+		GridPosition coordinates = {row, col};
+		bool available = checkAvailability(coordinates);
+		if (available){
+			output << "box " << boxLoc.size() << ": " << "(" << row << ", " << col << ")" << endl;
+			boxLoc.push_back(coordinates);
+			filledCells.push_back(coordinates);
+		}
+	}
+	output << endl;
 }
 
 void initRobots(){
@@ -497,11 +520,13 @@ void initRobots(){
 				coordinates,
 				robots.size()%2
 			};
-			
+			output << "robot " << robots.size() << ": " << "(" << row << ", " << col << ")" << endl;
 			robots.push_back(robot);
 			filledCells.push_back(coordinates);
 		}
 	}
+	
+	output << endl;
 	
 	for(int i = 0; i < robots.size(); i++){
 		int err = pthread_create(&(robots[i].thread_id), NULL, robotFunc, &robots[i]);
@@ -510,19 +535,6 @@ void initRobots(){
 			exit(1);
 		}
 		numLiveThreads++;
-	}
-}
-
-void initBoxes(){
-	while (boxLoc.size() < numBoxes){
-		int row = boxRowDist(engine);
-		int col = boxColDist(engine);
-		GridPosition coordinates = {row, col};
-		bool available = checkAvailability(coordinates);
-		if (available){
-			boxLoc.push_back(coordinates);
-			filledCells.push_back(coordinates);
-		}
 	}
 }
 
@@ -535,15 +547,31 @@ void move(Robot* robot, Direction dir)
 	cout<< "Moving!" << endl;
 	switch(dir){
 			case NORTH:
+				outputLock.lock();
+				output << "robot " << robot->num << " move N"  << endl;
+				outputLock.unlock();
+				
 				robot->coordinates.row-=1;
 				break;
 			case WEST:
+				outputLock.lock();
+				output << "robot " << robot->num << " move W"  << endl;
+				outputLock.unlock();
+				
 				robot->coordinates.col-=1;
 				break;
 			case SOUTH:
+				outputLock.lock();
+				output << "robot " << robot->num << " move S"  << endl;
+				outputLock.unlock();
+				
 				robot->coordinates.row+=1;
 				break;
 			case EAST:
+				outputLock.lock();
+				output << "robot " << robot->num << " move E"  << endl;
+				outputLock.unlock();
+				
 				robot->coordinates.col+=1;
 				break;
 			default:
@@ -558,18 +586,34 @@ void push(Robot* robot, Direction dir)
 	cout<< "Pushing!" << endl;
 	switch(dir){
 			case NORTH:
+				outputLock.lock();
+				output << "robot " << robot->num << " push N"  << endl;
+				outputLock.unlock();
+				
 				robot->coordinates.row-=1;
 				boxLoc[robot->num].row-=1;
 				break;
 			case WEST:
+				outputLock.lock();
+				output << "robot " << robot->num << " push W"  << endl;
+				outputLock.unlock();
+				
 				robot->coordinates.col-=1;
 				boxLoc[robot->num].col-=1;
 				break;
 			case SOUTH:
+				outputLock.lock();
+				output << "robot " << robot->num << " push S"  << endl;
+				outputLock.unlock();
+				
 				robot->coordinates.row+=1;
 				boxLoc[robot->num].row+=1;
 				break;
 			case EAST:
+				outputLock.lock();
+				output << "robot " << robot->num << " push E"  << endl;
+				outputLock.unlock();
+				
 				robot->coordinates.col+=1;
 				boxLoc[robot->num].col+=1;
 				break;
