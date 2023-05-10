@@ -60,8 +60,8 @@ void initDoors();
 void initRobots();
 void initBoxes();
 GridPosition getDistance(GridPosition mover, GridPosition destination);
-void move(Robot* robot, Direction dir);
-void push(Robot* robot, Direction dir);
+// void move(Robot* robot, Direction dir);
+// void push(Robot* robot, Direction dir);
 
 #if 0
 //=================================================================
@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 		exit(404);
 	}
     cout <<"Check 2" << endl;
-	if (numDoors < 1 || numDoors > 3){
+	if (numDoors < 1){
 		cerr<< "You have entered a weird number of doors" << endl;
 		exit(404);
 	}
@@ -235,8 +235,8 @@ int main(int argc, char **argv)
 	//	Now we can do application-level initialization
 	initializeApplication();
 
-	string outStr = printGrid();
-	cout << outStr << endl;
+	// string outStr = printGrid();
+	// cout << outStr << endl;
 
 	//	Now we enter the main loop of the program and to a large extend
 	//	"lose control" over its execution.  The callback functions that
@@ -283,10 +283,13 @@ void initializeApplication(void)
 	//	of the doors, boxes, and robots, and create threads (not
 	//	necessarily in that order).
 	//---------------------------------------------------------------
+	
+	srand(time(NULL));
+	
+	doorAssign.clear();
 	initDoors();
 	initBoxes();
 	initRobots();
-	doorAssign = {0, 1, 0, 1, 0};
 
 	//	For extra credit
 	// generatePartitions();
@@ -296,172 +299,239 @@ void initializeApplication(void)
 // Argument here was void, but I wanted to pass the robot as an argument
 void *robotFunc(void* param)
 {
+
+	cout << endl;
 	
 	Robot* robot = (Robot*)param;
 	
 	bool isAlive = true;
+	
 	int myIndex = robot->num;
 	int myDoorIndex = robot->assignedDoor;
+	
 	GridPosition myDoor = doorLoc[myDoorIndex];
 	GridPosition myBox = boxLoc[myIndex];
+	
+	
+	cout << "myDoor: " << myDoor << endl;
+	cout << "myBox: " << myBox << endl;
+	
+	
 	//	do planning (generate list of robot commands (move/push)
-	GridPosition boxDistance = getDistance(myBox, myDoor);
+	GridPosition boxDistance = getDistance(robot->coordinates, myDoor);
 	// Create robot's pushing positions 
-	GridPosition robotPushingPosH = {myBox.row, 0};
-	GridPosition robotPushingPosV = {0, myDoor.col};
+	GridPosition robotPushingPosH;// = {myBox.row, 0};
+	
+	cout << "boxDistance: " << boxDistance << endl;
+	
+	robotPushingPosH.row = myBox.row;
+	
+	GridPosition robotPushingPosV;// = {0, myDoor.col};
+	
+	robotPushingPosV.col = myDoor.col;
 
-
-	if (robot->isAlive && boxDistance.col < 0){
+	if (boxDistance.col < 0){
 		robotPushingPosH.col = myBox.col + 1;
 	}
-	else if (robot->isAlive){
+	else {
 		robotPushingPosH.col = myBox.col - 1;
 	}
 	
-	if (robot->isAlive && boxDistance.row > 0){
-		robotPushingPosV.row = myBox.row - 1;
-	}
-	else if (robot->isAlive){
+	cout << "robotPushingPosH: " << robotPushingPosH << endl;
+	
+	if (boxDistance.row > 0){
 		robotPushingPosV.row = myBox.row + 1;
 	}
+	else {
+		robotPushingPosV.row = myBox.row - 1;
+	}
 
-	GridPosition robotDistanceV = getDistance(robot->coordinates, robotPushingPosV);
 	GridPosition robotDistanceH = getDistance(robot->coordinates, robotPushingPosH);
 	GridPosition zero = {0,0};
+	
+	//cout << robotDistanceH.row << " " << robotDistanceH.col << endl;
 
-	// Set initial robot's first move
-	robot->moveType = moveHToH;
-	if (robotDistanceH.col > 0){
-		robot->dir = EAST;
+	// 0 left, 1 up, 2 right, 3 down
+	// 4 push left, 5 push up, 6 push right, 7 push down
+	vector<int> ops;
+	
+	bool left = robotDistanceH.col < 0 ? true : false;
+	bool up = robotDistanceH.row < 0 ? true : false;
+	
+	for(int i = 0; i < abs(robotDistanceH.col); i++){
+		if(left){
+			ops.push_back(0);
+		}
+		else{
+			ops.push_back(2);
+		}
 	}
-	else {
-		robot->dir = WEST;
+	
+	for(int i = 0; i < abs(robotDistanceH.row); i++){
+		if(up){
+			ops.push_back(1);
+		}
+		else{
+			ops.push_back(3);
+		}
 	}
-
-	cout<< "Current robot location: " << robot->coordinates.row << "," << robot->coordinates.col << endl;
-	cout<< "Current posH location: " << robotPushingPosH.row << "," << robotPushingPosH.col << endl;
-	cout<< "Current posV location: " << robotPushingPosV.row << "," << robotPushingPosV.col << endl;
-	while (isAlive)
-	{
-		//	execute one move  (we have 6 options for that move)
-		switch (robot->moveType)
-		{
-		case moveHToH:
-			if (robotDistanceH.col == 0){
-				robot->moveType = moveVToH;
-				if (robotDistanceH.row > 0){
-					robot->dir = SOUTH;
-				}
-				else {
-					robot->dir = NORTH;
-				}
-			}
-			else {
-				move(robot, robot->dir);
-				cout<< "Current robot location: " << robot->coordinates.row << "," << robot->coordinates.col << endl;
-				robotDistanceH = getDistance(robot->coordinates, robotPushingPosH);
-				cout<< "Current Distance: " << robotDistanceH.row << "," << robotDistanceH.col << endl;
-			}	
-			break;
-
-		case moveVToH:
-			if (robotDistanceH.row == 0){
-				cout << "In here?" << endl;
-				robot->moveType = pushH;
-				if (boxDistance.col > 0){
-					robot->dir = EAST;
-				}
-				else {
-					robot->dir = WEST;
-				}
-			}
-			else {
-				move(robot, robot->dir);
-				cout<< "Current robot location: " << robot->coordinates.row << "," << robot->coordinates.col << endl;
-				robotDistanceH = getDistance(robot->coordinates, robotPushingPosH);
-				cout<< "Current Distance: " << robotDistanceH.row << "," << robotDistanceH.col << endl;
-			}
-			break;
-
-		case pushH:
-			if (boxDistance.col == 0){
-				robot->moveType = moveVToV;
-				if (robotDistanceV.row > 0){
-					robot->dir = SOUTH;
-				}
-				else {
-					robot->dir = NORTH;
-				}
-			}
-			else {
-				push(robot, robot->dir);
-				cout<< "Current robot location: " << robot->coordinates.row << "," << robot->coordinates.col << endl;
-				boxDistance = getDistance(boxLoc[myIndex], myDoor);
-			}
-			break;
-
-
-		case moveVToV:
-			if (robotDistanceV.row == 0){
-				robot->moveType = moveHToV;
-				if (robotDistanceV.col > 0){
-					robot->dir = EAST;
-				}
-				else {
-					robot->dir = WEST;
-				}
-			}
-			else {
-				move(robot, robot->dir);
-				cout<< "Current robot location: " << robot->coordinates.row << "," << robot->coordinates.col << endl;
-				robotDistanceV = getDistance(robot->coordinates, robotPushingPosV);
-			}
-			break;
-
-		case moveHToV:
-			if (robotDistanceV.col == 0){
-				robot->moveType = pushV;
-				if (boxDistance.row > 0){
-					robot->dir = SOUTH;
-				}
-				else {
-					robot->dir = NORTH;
-				}
-			}
-			else {
-				move(robot, robot->dir);
-				cout<< "Current robot location: " << robot->coordinates.row << "," << robot->coordinates.col << endl;
-				robotDistanceV = getDistance(robot->coordinates, robotPushingPosV);
-			}
-			break;
-
-
-		case pushV:
-			if (boxDistance.row == 0){
-				if (boxDistance != zero){
-					robot->moveType = moveHToH;
-				}
-				else{
-					robot->isAlive = false;
-				}
-			}
-			else {
-				push(robot, robot->dir);
-				cout<< "Current robot location: " << robot->coordinates.row << "," << robot->coordinates.col << endl;
-				boxDistance = getDistance(boxLoc[myIndex], myDoor);
-			}
-			break;
+	
+	GridPosition robotDistanceV = getDistance(myBox, robotPushingPosV);
+	
+	left = robotDistanceV.col < 0 ? true : false;
+	up = robotDistanceV.row < 0 ? true : false;
+	
+	GridPosition toDoor = getDistance(robotPushingPosV, doorLoc[robot->assignedDoor]);
+	
+	for(int i = 0; i < abs(robotDistanceV.col); i++){
+		if(left){
+			ops.push_back(4);
+		}
+		else{
+			ops.push_back(6);
+		}
+	}
+	
+	if(up){
+		ops.push_back(3);
+	}
+	else{
+		ops.push_back(1);
+	}
+	
+	if(left){
+		ops.push_back(0);
+	}
+	else{
+		ops.push_back(2);
+	}
+	
+	up = toDoor.row < 0 ? true : false;
+	
+	cout << toDoor.col << ", " << toDoor.row << endl;
+	
+	for(int i = 0; i < abs(toDoor.row) + 1; i++){
+		if(up){
+			ops.push_back(5);
+		}
+		else{
+			ops.push_back(7);
+		}
+	}
+	cout << robot->num << ": ";
+	
+	for(int i = 0; i < ops.size(); i++){
+		cout << ops[i] << ", ";
+	}
+	cout << endl;
+	
+	int index = 0;
+	while(isAlive){
 		
-		default:
-				cerr<<"Something terribly wrong must've happened!!!" << endl;
-				exit(404);
+		usleep(robotSleepTime / 10);
+		
+		GridPosition toMove;
+		
+		switch(ops[index]){
+			case 0: // left move command
+			
+			toMove.row = robot->coordinates.row;
+			toMove.col = robot->coordinates.col - 1;
+			
+			robot->coordinates = toMove;
+			
+			index++;
+			break;
+			case 2: // right command
+			
+			toMove.row = robot->coordinates.row;
+			toMove.col = robot->coordinates.col + 1;
+			
+			robot->coordinates = toMove;
+			
+			index++;
+			
+			break;
+			case 1: // up command
+			
+			toMove.row = robot->coordinates.row - 1;
+			toMove.col = robot->coordinates.col;
+			
+			robot->coordinates = toMove;
+			
+			index++;
+			
+			break;
+			case 3: // down command
+			
+			toMove.row = robot->coordinates.row + 1;
+			toMove.col = robot->coordinates.col;
+			
+			robot->coordinates = toMove;
+			
+			index++;
+			
+			break;
+			case 4: // left push command
+			
+			toMove.row = robot->coordinates.row;
+			toMove.col = robot->coordinates.col - 1;
+			
+			robot->coordinates = toMove;
+			
+			if(boxLoc[robot->num] == robot->coordinates){
+				boxLoc[robot->num].col -= 1;
+			}
+			
+			index++;
+			
+			break;
+			case 5: // up push command
+			
+			toMove.row = robot->coordinates.row - 1;
+			toMove.col = robot->coordinates.col;
+			
+			robot->coordinates = toMove;
+			
+			if(boxLoc[robot->num] == robot->coordinates){
+				boxLoc[robot->num].row -= 1;
+			}
+			
+			index++;
+			
+			break;
+			case 6: // right push command
+			
+			toMove.row = robot->coordinates.row;
+			toMove.col = robot->coordinates.col + 1;
+			
+			robot->coordinates = toMove;
+			
+			if(boxLoc[robot->num] == robot->coordinates){
+				boxLoc[robot->num].col += 1;
+			}
+			
+			index++;
+			
+			break;
+			case 7: // down push command
+			
+			toMove.row = robot->coordinates.row + 1;
+			toMove.col = robot->coordinates.col;
+			
+			robot->coordinates = toMove;
+			
+			if(boxLoc[robot->num] == robot->coordinates){
+				boxLoc[robot->num].row += 1;
+			}
+			
+			index++;
+			
 			break;
 		}
-
-
-		usleep(robotSleepTime);
-		//
-		//		isAlive = still commands in list of commands
+		
+		if(index == ops.size()) break;
+		
 	}
 
 	return nullptr;
@@ -478,8 +548,8 @@ bool checkAvailability(GridPosition coordinates){
 
 void initDoors(){
 	while (doorLoc.size() < numDoors){
-		int row = rowDist(engine);
-		int col = colDist(engine);
+		int row = ((float)random()/(float)RAND_MAX) * numRows;
+		int col = ((float)random()/(float)RAND_MAX) * numCols;
 		GridPosition coordinates = {row, col};
 		bool available = checkAvailability(coordinates);
 		if (available){
@@ -508,8 +578,11 @@ void initBoxes(){
 
 void initRobots(){
 	while (robots.size() < numBoxes){
-		int row = rowDist(engine);
-		int col = colDist(engine);
+		int row = ((float)random()/(float)RAND_MAX) * numRows;
+		int col = ((float)random()/(float)RAND_MAX) * numCols;
+		
+		int randDoor = ((float)random()/(float)RAND_MAX) * (float)(doorLoc.size());
+		
 		GridPosition coordinates = {row, col};
 		bool available = checkAvailability(coordinates);
 		if (available){
@@ -518,11 +591,13 @@ void initRobots(){
 				robots.size(),
 				robots.size(),
 				coordinates,
-				robots.size()%2
+				randDoor
 			};
 			output << "robot " << robots.size() << ": " << "(" << row << ", " << col << ")" << endl;
 			robots.push_back(robot);
+			doorAssign.push_back(robot.assignedDoor);
 			filledCells.push_back(coordinates);
+			
 		}
 	}
 	
@@ -535,94 +610,17 @@ void initRobots(){
 			exit(1);
 		}
 		numLiveThreads++;
+		usleep(10000);
 	}
 }
 
 GridPosition getDistance(GridPosition mover, GridPosition destination){
-	return {destination.row - mover.row, destination.col - mover.col};
+	GridPosition d;
+	d.col = destination.col - mover.col;
+	d.row = destination.row - mover.row;
+	return d;
 }
 
-void move(Robot* robot, Direction dir)
-{
-	cout<< "Moving!" << endl;
-	switch(dir){
-			case NORTH:
-				outputLock.lock();
-				output << "robot " << robot->num << " move N"  << endl;
-				outputLock.unlock();
-				
-				robot->coordinates.row-=1;
-				break;
-			case WEST:
-				outputLock.lock();
-				output << "robot " << robot->num << " move W"  << endl;
-				outputLock.unlock();
-				
-				robot->coordinates.col-=1;
-				break;
-			case SOUTH:
-				outputLock.lock();
-				output << "robot " << robot->num << " move S"  << endl;
-				outputLock.unlock();
-				
-				robot->coordinates.row+=1;
-				break;
-			case EAST:
-				outputLock.lock();
-				output << "robot " << robot->num << " move E"  << endl;
-				outputLock.unlock();
-				
-				robot->coordinates.col+=1;
-				break;
-			default:
-				cout<< "WRONG3"<< endl;
-				exit(404);
-				break;
-		}
-}
-
-void push(Robot* robot, Direction dir)
-{
-	cout<< "Pushing!" << endl;
-	switch(dir){
-			case NORTH:
-				outputLock.lock();
-				output << "robot " << robot->num << " push N"  << endl;
-				outputLock.unlock();
-				
-				robot->coordinates.row-=1;
-				boxLoc[robot->num].row-=1;
-				break;
-			case WEST:
-				outputLock.lock();
-				output << "robot " << robot->num << " push W"  << endl;
-				outputLock.unlock();
-				
-				robot->coordinates.col-=1;
-				boxLoc[robot->num].col-=1;
-				break;
-			case SOUTH:
-				outputLock.lock();
-				output << "robot " << robot->num << " push S"  << endl;
-				outputLock.unlock();
-				
-				robot->coordinates.row+=1;
-				boxLoc[robot->num].row+=1;
-				break;
-			case EAST:
-				outputLock.lock();
-				output << "robot " << robot->num << " push E"  << endl;
-				outputLock.unlock();
-				
-				robot->coordinates.col+=1;
-				boxLoc[robot->num].col+=1;
-				break;
-			default:
-				cout<< "WRONG3"<< endl;
-				exit(404);
-				break;
-		}
-}
 
 #if 0
 //=================================================================
