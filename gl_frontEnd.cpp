@@ -150,14 +150,18 @@ void displayGridPane(void)
 	for (int i=0; i<numBoxes; i++)
 	{
 		//	here I would test if the robot thread is still live
-		drawRobotAndBox(i, robots[i].coordinates.row, robots[i].coordinates.col, boxLoc[i].row, boxLoc[i].col, doorAssign[i]);
+		if(robots[i].isAlive == false) {
+			continue;
+		};
+		
+		drawRobotAndBox(i, robots[i].coordinates.row, robots[i].coordinates.col, boxLoc[i].row, boxLoc[i].col, robots[i].assignedDoor);
 	}
 
 	for (int i=0; i<numDoors; i++)
 	{
-		//	here I would test if the robot thread is still alive
 		drawDoor(i, doorLoc[i].row, doorLoc[i].col);
 	}
+	
 
 	//	This call does nothing important. It only draws lines
 	//	There is nothing to synchronize here
@@ -238,7 +242,7 @@ void drawRobotAndBox(int id,
 {
 	static const float	DH = 1.f*GRID_PANE_WIDTH / numCols,
 						DV = 1.f*GRID_PANE_HEIGHT / numRows;
-
+	
 	//	my boxes are brown with a contour the same color as destination door
 	glColor4f(0.25f, 0.25f, 0.f, 1.f);
 	glPushMatrix();

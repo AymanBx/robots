@@ -118,8 +118,6 @@ struct SlidingPartition
 
 };
 
-
-
 struct Robot
 {
 	bool isAlive;
