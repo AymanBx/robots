@@ -703,6 +703,7 @@ void initializeFrontEnd(int argc, char** argv, void (*gridDisplayCB)(void),
 
 void createDoorColors(void)
 {
+	
 	doorColor = (float**) malloc(numDoors * sizeof(float*));
 
 	float hueStep = 360.f / numDoors;

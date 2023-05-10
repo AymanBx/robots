@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <thread>
+#include <ostream>
 
 //===============================================
 //	Application-wide constants
@@ -93,7 +94,11 @@ struct GridPosition
   	bool operator!=(const GridPosition& other) const {
     return (row != other.row) || (col != other.col);
   	}
-
+	
+	friend std::ostream& operator<<(std::ostream& os, const GridPosition& pos){
+		os << "(" << pos.col << ", " << pos.row << ")";
+		return os;
+	}
 };
 
 /**
