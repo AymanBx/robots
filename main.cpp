@@ -269,7 +269,13 @@ void cleanupAndQuit()
 	//	//	Free allocated resource before leaving (not absolutely needed, but
 	//	//	just nicer.  Also, if you crash there, you know something is wrong
 	//	//	in your code.
-	cout << "Cleanup" << endl;
+
+	// Kill all the robots
+	for (unsigned int i = 0; i < robots.size(); i++){
+		robots[i].isAlive = false;
+	}
+
+	// Join all the threads
 	for (unsigned int i = 0; i < threads.size(); i++){
 		cout << "Joined " << i << endl;
 		threads[i].join();
