@@ -35,5 +35,6 @@ void initializeFrontEnd(int argc, char** argv,
 
 void speedupRobots(void);
 void slowdownRobots(void);
+void cleanupAndQuit();
 
 #endif // GL_FRONT_END_H
