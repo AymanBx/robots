@@ -307,7 +307,7 @@ void initializeApplication(void)
 	
 	// Generate random seed
 	unsigned int seed = time(NULL) % 5000;
-	srand(seed);
+	srand(824);
 	cout << seed << endl;
 	
 
@@ -735,7 +735,7 @@ void robotFunc(Robot* robot)
 
 		}
 		
-		if(index == ops.size() || boxLoc[robot->num] == doorLoc[robot->assignedDoor]){
+		if(index == ops.size() || boxLoc[robot->num] == doorLoc[robot->assignedDoor] || robot->isAlive == false){
 			end(robot);
 			break;
 		}
@@ -848,6 +848,8 @@ void initRobots(){
 	for(unsigned int i = 0; i < robots.size(); i++){
 		threads.push_back(thread(robotFunc, &robots[i]));
 		// Error checking in case threading failed...
+		
+		
 		if (!threads[i].joinable()){
 			cerr << "Something went wrong; robot #" << i+1 << "failed to initialize a thread." << endl;
 			exit(404);
