@@ -56,6 +56,7 @@ void cleanupAndQuit();
 void generatePartitions();
 // Added functions
 bool checkAvailability(GridPosition coordinates);
+bool checkMovement(GridPosition coordinates);
 void initDoors();
 void initRobots();
 void initBoxes();
@@ -286,7 +287,11 @@ void initializeApplication(void)
 	//	necessarily in that order).
 	//---------------------------------------------------------------
 	
-	srand(time(NULL));
+	unsigned int seed = time(NULL) % 5000;
+	
+	srand(seed);
+	
+	cout << seed << endl;
 	
 	doorAssign.clear();
 	initDoors();
@@ -297,50 +302,25 @@ void initializeApplication(void)
 	// generatePartitions();
 }
 
-// multithreaded robots
-// Argument here was void, but I wanted to pass the robot as an argument
-void *robotFunc(void* param)
-{
-	Robot* robot = (Robot*)param;
+vector<int> directionsToBoxPushStart(Robot* robot){
+	GridPosition box = boxLoc[robot->num];
+	GridPosition door = doorLoc[robot->assignedDoor];
 	
-	bool isAlive = true;
+	GridPosition robotPushingPosH;
+	robotPushingPosH.row = box.row;
 	
-	int myIndex = robot->num;
-	int myDoorIndex = robot->assignedDoor;
+	GridPosition boxDistance = getDistance(box, door);
 	
-	GridPosition myDoor = doorLoc[myDoorIndex];
-	GridPosition myBox = boxLoc[myIndex];
-	
-	//	do planning (generate list of robot commands (move/push)
-	GridPosition boxDistance = getDistance(myBox, myDoor);
-	// Create robot's pushing positions 
-	GridPosition robotPushingPosH;// = {myBox.row, 0};
-	
-	robotPushingPosH.row = myBox.row;
-	
-	GridPosition robotPushingPosV;// = {0, myDoor.col};
-	
-	robotPushingPosV.col = myDoor.col;
-
 	if (boxDistance.col < 0){
-		robotPushingPosH.col = myBox.col + 1;
+		robotPushingPosH.col = box.col + 1;
 	}
 	else {
-		robotPushingPosH.col = myBox.col - 1;
+		robotPushingPosH.col = box.col - 1;
 	}
 	
-	if (boxDistance.row > 0){
-		robotPushingPosV.row = myBox.row + 1;
-	}
-	else {
-		robotPushingPosV.row = myBox.row - 1;
-	}
-
-	GridPosition robotDistanceH = getDistance(robot->coordinates, robotPushingPosH);
-	
-	// 0 left, 1 up, 2 right, 3 down
-	// 4 push left, 5 push up, 6 push right, 7 push down
 	vector<int> ops;
+	
+	GridPosition robotDistanceH = getDistance(robot->coordinates, robotPushingPosH);
 	
 	bool left = robotDistanceH.col < 0 ? true : false;
 	bool up = robotDistanceH.row < 0 ? true : false;
@@ -363,12 +343,33 @@ void *robotFunc(void* param)
 		}
 	}
 	
-	GridPosition robotDistanceV = getDistance(myBox, robotPushingPosV);
+	return ops;
+}
+
+vector<int> directionsToVerticalToDoor(Robot* robot){
+	GridPosition box = boxLoc[robot->num];
+	GridPosition door = doorLoc[robot->assignedDoor];
 	
-	left = robotDistanceV.col < 0 ? true : false;
-	up = robotDistanceV.row < 0 ? true : false;
+	GridPosition boxDistance = getDistance(box, door);
 	
-	GridPosition toDoor = getDistance(robotPushingPosV, doorLoc[robot->assignedDoor]);
+	GridPosition robotPushingPosV;
+	
+	robotPushingPosV.col = door.col;
+	
+	if (boxDistance.row > 0){
+		robotPushingPosV.row = box.row + 1;
+	}
+	else {
+		robotPushingPosV.row = box.row - 1;
+	}
+	
+	vector<int> ops;
+	
+	GridPosition robotDistanceV = getDistance(box, robotPushingPosV);
+	
+	
+	bool left = robotDistanceV.col < 0 ? true : false;
+	bool up = robotDistanceV.row < 0 ? true : false;
 	
 	for(int i = 0; i < abs(robotDistanceV.col); i++){
 		if(left){
@@ -378,7 +379,6 @@ void *robotFunc(void* param)
 			ops.push_back(6);
 		}
 	}
-	
 	if(up){
 		ops.push_back(3);
 	}
@@ -393,7 +393,19 @@ void *robotFunc(void* param)
 		ops.push_back(2);
 	}
 	
-	up = toDoor.row < 0 ? true : false;
+	return ops;
+}
+
+vector<int> directionsToDoor(Robot* robot){
+	
+	GridPosition box = boxLoc[robot->num];
+	GridPosition door = doorLoc[robot->assignedDoor];
+	
+	GridPosition toDoor = getDistance(box, door);
+	
+	vector<int> ops;
+	
+	bool up = toDoor.row < 0 ? true : false;
 	
 	for(int i = 0; i < abs(toDoor.row) + 1; i++){
 		if(up){
@@ -404,21 +416,91 @@ void *robotFunc(void* param)
 		}
 	}
 	
+	return ops;
+}
+
+vector<int> path_box_to_door(Robot* robot){
+	vector<int> ops;
+	vector<int> dbs = directionsToBoxPushStart(robot);
+	vector<int> dvd = directionsToVerticalToDoor(robot);
+	vector<int> dtd = directionsToDoor(robot);
+	
+	ops.insert(end(ops), begin(dbs), end(dbs));
+	ops.insert(end(ops), begin(dvd), end(dvd));
+	ops.insert(end(ops), begin(dtd), end(dtd));
+	
+	return ops;
+}
+
+void end(Robot* robot){
+	robot->isAlive = false;
+	robot->coordinates = {-1, -1};
+	boxLoc[robot->num] = {-1, -1};
+}
+
+// multithreaded robots
+// Argument here was void, but I wanted to pass the robot as an argument
+void *robotFunc(void* param)
+{
+	Robot* robot = (Robot*)param;
+	
+	bool isAlive = true;
+	
+	
+	// 0 left, 1 up, 2 right, 3 down
+	// 4 push left, 5 push up, 6 push right, 7 push down
+	vector<int> ops = path_box_to_door(robot);
+	
+	cout << robot->num << ":";
+	for(int op : ops){
+		switch(op){
+			case 0: cout << " W"; break;
+			case 1: cout << " N"; break;
+			case 2: cout << " E"; break;
+			case 3: cout << " S"; break;
+			case 4: cout << " PW"; break;
+			case 5: cout << " PN"; break;
+			case 6: cout << " PE"; break;
+			case 7: cout << " PS"; break;
+		}
+	}
+	
+	cout << endl;
+	
 	unsigned int index = 0;
 	
 	while(isAlive){
 		
-		usleep(robotSleepTime/7);
+		usleep(robotSleepTime / 10);
 		
 		GridPosition toMove;
+		GridPosition boxMove;
 		
+		// 0 left, 1 up, 2 right, 3 down 
+		// 4 push left, 5 push up, 6 push right, 7 push down
+		// 8 repath
 		switch(ops[index]){
 			case 0: // left move command
 			
 			toMove.row = robot->coordinates.row;
 			toMove.col = robot->coordinates.col - 1;
 			
+			gridLock.lock();
+			if(!checkMovement(toMove)){
+				
+				ops.clear();
+				ops.push_back(2);
+				ops.push_back(3);
+				ops.push_back(8);
+				index = 0;
+				
+				gridLock.unlock();
+				continue;
+			}
+			
 			robot->coordinates = toMove;
+			
+			gridLock.unlock();
 			
 			outputLock.lock();
 			output << "robot " << robot->num << " move W" << endl;
@@ -431,7 +513,22 @@ void *robotFunc(void* param)
 			toMove.row = robot->coordinates.row;
 			toMove.col = robot->coordinates.col + 1;
 			
+			gridLock.lock();
+			if(!checkMovement(toMove)){
+				
+				ops.clear();
+				ops.push_back(0);
+				ops.push_back(1);
+				ops.push_back(8);
+				index = 0;
+				
+				gridLock.unlock();
+				continue;
+			}
+			
 			robot->coordinates = toMove;
+			
+			gridLock.unlock();
 			
 			outputLock.lock();
 			output << "robot " << robot->num << " move E" << endl;
@@ -445,7 +542,22 @@ void *robotFunc(void* param)
 			toMove.row = robot->coordinates.row - 1;
 			toMove.col = robot->coordinates.col;
 			
+			gridLock.lock();
+			if(!checkMovement(toMove)){
+				
+				ops.clear();
+				ops.push_back(3);
+				ops.push_back(2);
+				ops.push_back(8);
+				index = 0;
+				
+				gridLock.unlock();
+				continue;
+			}
+			
 			robot->coordinates = toMove;
+			
+			gridLock.unlock();
 			
 			outputLock.lock();
 			output << "robot " << robot->num << " move N" << endl;
@@ -459,7 +571,22 @@ void *robotFunc(void* param)
 			toMove.row = robot->coordinates.row + 1;
 			toMove.col = robot->coordinates.col;
 			
+			gridLock.lock();
+			if(!checkMovement(toMove)){
+				
+				ops.clear();
+				ops.push_back(1);
+				ops.push_back(0);
+				ops.push_back(8);
+				index = 0;
+				
+				gridLock.unlock();
+				continue;
+			}
+			
 			robot->coordinates = toMove;
+			
+			gridLock.unlock();
 			
 			outputLock.lock();
 			output << "robot " << robot->num << " move S" << endl;
@@ -472,12 +599,19 @@ void *robotFunc(void* param)
 			
 			toMove.row = robot->coordinates.row;
 			toMove.col = robot->coordinates.col - 1;
+			boxMove.row = boxLoc[robot->num].row;
+			boxMove.col = boxLoc[robot->num].col - 1;
+			
+			gridLock.lock();
+			if(!checkMovement(boxMove) && !(boxMove == doorLoc[robot->assignedDoor])){
+				gridLock.unlock();
+				continue;
+			}
 			
 			robot->coordinates = toMove;
+			boxLoc[robot->num] = boxMove;
 			
-			if(boxLoc[robot->num] == robot->coordinates){
-				boxLoc[robot->num].col -= 1;
-			}
+			gridLock.unlock();
 			
 			outputLock.lock();
 			output << "robot " << robot->num << " push W" << endl;
@@ -490,12 +624,21 @@ void *robotFunc(void* param)
 			
 			toMove.row = robot->coordinates.row - 1;
 			toMove.col = robot->coordinates.col;
+			boxMove.row = boxLoc[robot->num].row - 1;
+			boxMove.col = boxLoc[robot->num].col;
+			
+			gridLock.lock();
+			
+			if(!checkMovement(boxMove) && !(boxMove == doorLoc[robot->assignedDoor])){
+				gridLock.unlock();
+				continue;
+			}
 			
 			robot->coordinates = toMove;
+			boxLoc[robot->num] = boxMove;
 			
-			if(boxLoc[robot->num] == robot->coordinates){
-				boxLoc[robot->num].row -= 1;
-			}
+			
+			gridLock.unlock();
 			
 			outputLock.lock();
 			output << "robot " << robot->num << " push N" << endl;
@@ -508,12 +651,20 @@ void *robotFunc(void* param)
 			
 			toMove.row = robot->coordinates.row;
 			toMove.col = robot->coordinates.col + 1;
+			boxMove.row = boxLoc[robot->num].row;
+			boxMove.col = boxLoc[robot->num].col + 1;
+			
+			gridLock.lock();
+			
+			if(!checkMovement(boxMove) && !(boxMove == doorLoc[robot->assignedDoor])){
+				gridLock.unlock();
+				continue;
+			}
 			
 			robot->coordinates = toMove;
+			boxLoc[robot->num] = boxMove;
 			
-			if(boxLoc[robot->num] == robot->coordinates){
-				boxLoc[robot->num].col += 1;
-			}
+			gridLock.unlock();
 			
 			outputLock.lock();
 			output << "robot " << robot->num << " push E" << endl;
@@ -526,12 +677,20 @@ void *robotFunc(void* param)
 			
 			toMove.row = robot->coordinates.row + 1;
 			toMove.col = robot->coordinates.col;
+			boxMove.row = boxLoc[robot->num].row + 1;
+			boxMove.col = boxLoc[robot->num].col;
+			
+			gridLock.lock();
+			
+			if(!checkMovement(boxMove) && !(boxMove == doorLoc[robot->assignedDoor])){
+				gridLock.unlock();
+				continue;
+			}
 			
 			robot->coordinates = toMove;
+			boxLoc[robot->num] = boxMove;
 			
-			if(boxLoc[robot->num] == robot->coordinates){
-				boxLoc[robot->num].row += 1;
-			}
+			gridLock.unlock();
 			
 			outputLock.lock();
 			output << "robot " << robot->num << " push S" << endl;
@@ -540,16 +699,45 @@ void *robotFunc(void* param)
 			index++;
 			
 			break;
+			case 8:
+			
+			ops.clear();
+			ops = path_box_to_door(robot);
+			index = 0;
+			
+			break;
 		}
 		
 		if(index == ops.size() || boxLoc[robot->num] == doorLoc[robot->assignedDoor]){
-			robot->isAlive = false;
+			end(robot);
 			break;
 		}
 		
 	}
 
 	return nullptr;
+}
+
+bool checkRobots(GridPosition coordinates){
+	for (unsigned int i = 0; i < robots.size(); i++){
+		if (coordinates == robots[i].coordinates && robots[i].isAlive){
+			return false;
+		}
+	}
+	return true;
+}
+
+bool checkBoxes(GridPosition coordinates){
+	for (unsigned int i = 0; i < boxLoc.size(); i++){
+		if (coordinates == boxLoc[i]){
+			return false;
+		}
+	}
+	return true;
+}
+
+bool checkMovement(GridPosition coordinates){
+	return checkRobots(coordinates) && checkBoxes(coordinates);
 }
 
 bool checkAvailability(GridPosition coordinates){
@@ -559,6 +747,17 @@ bool checkAvailability(GridPosition coordinates){
 		}
 	}
 	return true;
+}
+
+void removeDoors(){
+	for(unsigned int i = 0; i < doorLoc.size(); i++){
+		for(unsigned int j = 0; j < filledCells.size(); j++){
+			if(doorLoc[i] == filledCells[j]){
+				filledCells.erase(filledCells.begin() + j);
+				break;
+			}
+		}
+	}
 }
 
 void initDoors(){
@@ -617,6 +816,8 @@ void initRobots(){
 	}
 	
 	output << endl;
+	
+	removeDoors();
 	
 	for(unsigned int i = 0; i < robots.size(); i++){
 		int err = pthread_create(&(robots[i].thread_id), NULL, robotFunc, &robots[i]);
