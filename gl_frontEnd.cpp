@@ -542,6 +542,7 @@ void myGridPaneMouse(int button, int state, int x, int y)
 			}
 			else if (state == GLUT_UP)
 			{
+				cleanupAndQuit();
 				//	exit(0);
 			}
 			break;
@@ -553,6 +554,7 @@ void myGridPaneMouse(int button, int state, int x, int y)
 	glutSetWindow(gMainWindow);
 	glutPostRedisplay();
 }
+
 
 //	This function is called when a mouse event occurs in the state pane
 void myStatePaneMouse(int button, int state, int x, int y)
@@ -566,6 +568,7 @@ void myStatePaneMouse(int button, int state, int x, int y)
 			}
 			else if (state == GLUT_UP)
 			{
+				cleanupAndQuit();
 				//	exit(0);
 			}
 			break;
@@ -589,7 +592,7 @@ void myKeyboard(unsigned char c, int x, int y)
 	{
 		//	'esc' to quit
 		case 27:
-			exit(0);
+			cleanupAndQuit();
 			break;
 
 		//	slowdown

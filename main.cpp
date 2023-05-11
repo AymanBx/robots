@@ -138,13 +138,14 @@ SquareType **grid;
 // int** doorLoc;
 //	Or with a bit of retooling
 vector<int> doorAssign;
-vector<GridPosition> boxLoc;
 vector<GridPosition> doorLoc;
+vector<GridPosition> boxLoc;
+vector<Robot> robots;
+
+vector<thread> threads;
+
 // A vector that holds all the filled-up cells
 vector<GridPosition> filledCells;
-
-// Vector that holds current robots
-vector<Robot> robots;
 
 // Random engine init
 random_device randDev;
@@ -268,15 +269,21 @@ void cleanupAndQuit()
 	//	//	Free allocated resource before leaving (not absolutely needed, but
 	//	//	just nicer.  Also, if you crash there, you know something is wrong
 	//	//	in your code.
-	
-	
+	cout << "Cleanup" << endl;
+	for (unsigned int i = 0; i < threads.size(); i++){
+		cout << "Joined " << i << endl;
+		threads[i].join();
+	}
+	cout << "Done joining" << endl;
+
 	for (int i = 0; i < numRows; i++)
 		delete[] grid[i];
 	delete[] grid;
 	for (int k = 0; k < MAX_NUM_MESSAGES; k++)
 		delete[] message[k];
 	delete[] message;
-	
+	cout << "Professor's" << endl;
+
 
 	exit(0);
 }
@@ -457,9 +464,8 @@ void end(Robot* robot){
 
 // multithreaded robots
 // Argument here was void, but I wanted to pass the robot as an argument
-void *robotFunc(void* param)
+void robotFunc(Robot* robot)
 {
-	Robot* robot = (Robot*)param;
 	
 	unsigned int attempt = 0;
 	bool isAlive = true;
@@ -726,7 +732,7 @@ void *robotFunc(void* param)
 			ops = path_box_to_door(robot);
 			index = 0;
 			break;
-			
+
 		}
 		
 		if(index == ops.size() || boxLoc[robot->num] == doorLoc[robot->assignedDoor]){
@@ -735,8 +741,6 @@ void *robotFunc(void* param)
 		}
 		
 	}
-
-	return nullptr;
 }
 
 bool checkRobots(GridPosition coordinates){
@@ -842,11 +846,14 @@ void initRobots(){
 	removeDoors();
 	
 	for(unsigned int i = 0; i < robots.size(); i++){
-		int err = pthread_create(&(robots[i].thread_id), NULL, robotFunc, &robots[i]);
-		if(err != 0){
-			printf("Couldn't create thread: %d. [%d]: %s\n", i, err, strerror(err));
-			exit(1);
+		threads.push_back(thread(robotFunc, &robots[i]));
+		// Error checking in case threading failed...
+		if (!threads[i].joinable()){
+			cerr << "Something went wrong; robot #" << i+1 << "failed to initialize a thread." << endl;
+			exit(404);
 		}
+		
+		
 		numLiveThreads++;
 		usleep(10000);
 	}
