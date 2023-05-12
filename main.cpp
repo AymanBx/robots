@@ -64,8 +64,8 @@ bool checkRobots(GridPosition coordinates);
 bool checkBoxes(GridPosition coordinates);
 bool checkMovement(GridPosition coordinates);
 GridPosition getDistance(GridPosition mover, GridPosition destination);
-// void move(Robot* robot, Direction dir);
-// void push(Robot* robot, Direction dir);
+void move(Robot* robot, GridPosition dest, int direction);
+void push(Robot* robot, GridPosition dest, GridPosition boxMove, int direction);
 
 #if 0
 //=================================================================
@@ -473,8 +473,8 @@ void end(Robot* robot){
 void robotFunc(Robot* robot)
 {
 	
-	unsigned int attempt = 0;
-	bool isAlive = true;
+	// unsigned int attempt = 0;
+	// bool isAlive = true;
 	unsigned int index = 0;
 	
 	
@@ -498,7 +498,7 @@ void robotFunc(Robot* robot)
 	cout << endl;
 	
 	
-	while(isAlive){
+	while(robot->isAlive){
 		
 		usleep(robotSleepTime / 10);
 		
@@ -510,14 +510,16 @@ void robotFunc(Robot* robot)
 		// 8 repath
 		switch(ops[index]){
 
+			
 			case 0: // left move command
+			// case 1: // right move command
+			// case 2:
+			// case 3:
 			toMove.row = robot->coordinates.row;
 			toMove.col = robot->coordinates.col - 1;
 			
 			gridLock.lock();
-
 			if(!checkMovement(toMove)){
-				
 				// If move-left failed: move robot right then down then repath?! Only after first try? 
 				ops.clear();
 				ops.push_back(2);
@@ -528,42 +530,29 @@ void robotFunc(Robot* robot)
 				gridLock.unlock();
 				continue;
 			}
-			
-			robot->coordinates = toMove;
-			gridLock.unlock();
-			
-			outputLock.lock();
-			output << "robot " << robot->num << " move W" << endl;
-			outputLock.unlock();
-			
+			move(robot, toMove, ops[index]);	
+					
 			index++;
 			break;
 
 
-			case 2: // right move command
+			case 2: 
 			toMove.row = robot->coordinates.row;
 			toMove.col = robot->coordinates.col + 1;
 			
 			gridLock.lock();
 			// If move right failed: move robot left then up then repath
 			if(!checkMovement(toMove)){
-				
 				ops.clear();
 				ops.push_back(0);
 				ops.push_back(1);
 				ops.push_back(8);
 				index = 0;
-				
+	
 				gridLock.unlock();
 				continue;
 			}
-			
-			robot->coordinates = toMove;
-			gridLock.unlock();
-			
-			outputLock.lock();
-			output << "robot " << robot->num << " move E" << endl;
-			outputLock.unlock();
+			move(robot, toMove, ops[index]);
 			
 			index++;
 			break;
@@ -577,7 +566,6 @@ void robotFunc(Robot* robot)
 			gridLock.lock();
 			// If move up failed: move robot down then right then repath
 			if(!checkMovement(toMove)){
-				
 				ops.clear();
 				ops.push_back(3);
 				ops.push_back(2);
@@ -587,13 +575,7 @@ void robotFunc(Robot* robot)
 				gridLock.unlock();
 				continue;
 			}
-			
-			robot->coordinates = toMove;
-			gridLock.unlock();
-			
-			outputLock.lock();
-			output << "robot " << robot->num << " move N" << endl;
-			outputLock.unlock();
+			move(robot, toMove, ops[index]);
 			
 			index++;
 			break;
@@ -617,13 +599,7 @@ void robotFunc(Robot* robot)
 				gridLock.unlock();
 				continue;
 			}
-			
-			robot->coordinates = toMove;
-			gridLock.unlock();
-			
-			outputLock.lock();
-			output << "robot " << robot->num << " move S" << endl;
-			outputLock.unlock();
+			move(robot, toMove, ops[index]);
 			
 			index++;
 			break;
@@ -642,14 +618,7 @@ void robotFunc(Robot* robot)
 				gridLock.unlock();
 				continue;
 			}
-			
-			robot->coordinates = toMove;
-			boxLoc[robot->num] = boxMove;
-			gridLock.unlock();
-			
-			outputLock.lock();
-			output << "robot " << robot->num << " push W" << endl;
-			outputLock.unlock();
+			push(robot, toMove, boxMove, ops[index]);
 			
 			index++;
 			break;
@@ -668,21 +637,13 @@ void robotFunc(Robot* robot)
 				gridLock.unlock();
 				continue;
 			}
-			
-			robot->coordinates = toMove;
-			boxLoc[robot->num] = boxMove;
-			gridLock.unlock();
-			
-			outputLock.lock();
-			output << "robot " << robot->num << " push N" << endl;
-			outputLock.unlock();
+			push(robot, toMove, boxMove, ops[index]);
 			
 			index++;
 			break;
 
 
 			case 6: // right push command
-			
 			toMove.row = robot->coordinates.row;
 			toMove.col = robot->coordinates.col + 1;
 			boxMove.row = boxLoc[robot->num].row;
@@ -694,21 +655,13 @@ void robotFunc(Robot* robot)
 				gridLock.unlock();
 				continue;
 			}
-			
-			robot->coordinates = toMove;
-			boxLoc[robot->num] = boxMove;
-			gridLock.unlock();
-			
-			outputLock.lock();
-			output << "robot " << robot->num << " push E" << endl;
-			outputLock.unlock();
+			push(robot, toMove, boxMove, ops[index]);
 			
 			index++;
 			break;
 
 
 			case 7: // down push command
-			
 			toMove.row = robot->coordinates.row + 1;
 			toMove.col = robot->coordinates.col;
 			boxMove.row = boxLoc[robot->num].row + 1;
@@ -720,14 +673,7 @@ void robotFunc(Robot* robot)
 				gridLock.unlock();
 				continue;
 			}
-			
-			robot->coordinates = toMove;
-			boxLoc[robot->num] = boxMove;
-			gridLock.unlock();
-			
-			outputLock.lock();
-			output << "robot " << robot->num << " push S" << endl;
-			outputLock.unlock();
+			push(robot, toMove, boxMove, ops[index]);
 			
 			index++;
 			break;
@@ -747,6 +693,69 @@ void robotFunc(Robot* robot)
 		}
 		
 	}
+}
+
+void move(Robot* robot, GridPosition dest, int direction){
+	// 0 left, 1 up, 2 right, 3 down 
+	// 4 push left, 5 push up, 6 push right, 7 push down
+	// 8 repath
+	robot->coordinates = dest;
+	switch (direction){
+		case 0:
+			outputLock.lock();
+			output << "robot " << robot->num << " move W" << endl;
+			outputLock.unlock();
+			break;
+		case 2:			
+			outputLock.lock();
+			output << "robot " << robot->num << " move E" << endl;
+			outputLock.unlock();
+			break;
+		case 1: 
+			outputLock.lock();
+			output << "robot " << robot->num << " move N" << endl;
+			outputLock.unlock();
+			break;
+		case 3:
+			outputLock.lock();
+			output << "robot " << robot->num << " move S" << endl;
+			outputLock.unlock();
+			break;
+
+	}
+	gridLock.unlock();
+}
+
+void push(Robot* robot, GridPosition dest, GridPosition boxMove, int direction){
+	// 0 left, 1 up, 2 right, 3 down 
+	// 4 push left, 5 push up, 6 push right, 7 push down
+	// 8 repath
+	robot->coordinates = dest;
+	boxLoc[robot->num] = boxMove;
+	switch (direction){
+		case 4:
+			outputLock.lock();
+			output << "robot " << robot->num << " push W" << endl;
+			outputLock.unlock();
+			break;
+		case 5:			
+			outputLock.lock();
+			output << "robot " << robot->num << " push N" << endl;
+			outputLock.unlock();
+			break;
+		case 6: 
+			outputLock.lock();
+			output << "robot " << robot->num << " push E" << endl;
+			outputLock.unlock();
+			break;
+		case 7:
+			outputLock.lock();
+			output << "robot " << robot->num << " push S" << endl;
+			outputLock.unlock();
+			break;
+
+	}
+	gridLock.unlock();
 }
 
 bool checkRobots(GridPosition coordinates){
@@ -854,8 +863,6 @@ void initRobots(){
 	for(unsigned int i = 0; i < robots.size(); i++){
 		threads.push_back(thread(robotFunc, &robots[i]));
 		// Error checking in case threading failed...
-		
-		
 		if (!threads[i].joinable()){
 			cerr << "Something went wrong; robot #" << i+1 << "failed to initialize a thread." << endl;
 			exit(404);
