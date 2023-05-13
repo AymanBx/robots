@@ -58,6 +58,7 @@ void generatePartitions();
 void initDoors();
 void initRobots();
 void initBoxes();
+void end(Robot* robot);
 void removeDoors();
 bool checkAvailability(GridPosition coordinates);
 bool checkRobots(GridPosition coordinates);
@@ -271,7 +272,7 @@ void cleanupAndQuit()
 	//	//	in your code.
 	
 	for(unsigned int i = 0; i < robots.size(); i++){
-		robots[i].isAlive = false;
+		end(&robots[i]);
 	}
 	
 	for (unsigned int i = 0; i < threads.size(); i++){
