@@ -68,8 +68,8 @@ vector<int> directionsToBoxPushStart(Robot* robot);
 vector<int> directionsToVerticalToDoor(Robot* robot);
 vector<int> directionsToDoor(Robot* robot);
 vector<int> path_box_to_door(Robot* robot);
-void move(Robot* robot, GridPosition dest, int direction);
-void push(Robot* robot, GridPosition dest, GridPosition boxMove, int direction);
+void move(Robot* robot, int direction);
+void push(Robot* robot, int direction);
 void end(Robot* robot);
 
 #if 0
@@ -271,7 +271,8 @@ void cleanupAndQuit()
 
 	// Kill all the robots
 	for (unsigned int i = 0; i < robots.size(); i++){
-		robots[i].isAlive = false;
+		// robots[i].isAlive = false;
+		end(&robots[i]);
 	}
 
 	// Join all the threads
@@ -308,20 +309,13 @@ void initializeApplication(void)
 	//	necessarily in that order).
 	//---------------------------------------------------------------
 	
-	// Generate random seed
-	// unsigned int seed = time(NULL) % 5000;
-	// srand(824);
-	// cout << seed << endl;
-	
 	//	For extra credit
 	// generatePartitions();
-
 
 	doorAssign.clear();
 	initDoors();
 	initBoxes();
 	initRobots();
-
 }
 
 // Generate commands that would lead the robot to move towards the position of 
@@ -467,6 +461,7 @@ void end(Robot* robot){
 	robot->isAlive = false;
 	robot->coordinates = {-1, -1};
 	boxLoc[robot->num] = {-1, -1};
+	numLiveThreads--;
 }
 
 // Thread function for a robot object, generate its path and run the commands.
@@ -497,112 +492,47 @@ void robotFunc(Robot* robot)
 	
 	
 	while(robot->isAlive){
-		
 		usleep(robotSleepTime / 10);
-		
-		GridPosition toMove;
-		GridPosition boxMove;
-		
 
 		switch(ops[index]){
 
-			
 			case 0: // left move command
-
-			toMove.row = robot->coordinates.row;
-			toMove.col = robot->coordinates.col - 1;
-			
-			move(robot, toMove, ops[index]);	
-					
-			index++;
+			move(robot, ops[index]);	
+	
 			break;
-
 
 			case 2: // right move command
-
-			toMove.row = robot->coordinates.row;
-			toMove.col = robot->coordinates.col + 1;
-			
-			move(robot, toMove, ops[index]);
-			
-			index++;
+			move(robot, ops[index]);
 			break;
-
 
 			case 1: // move up command
-			
-			toMove.row = robot->coordinates.row - 1;
-			toMove.col = robot->coordinates.col;
-			
-			move(robot, toMove, ops[index]);
-			
-			index++;
+			move(robot, ops[index]);
 			break;
-
 
 			case 3: // move down command
-			
-			toMove.row = robot->coordinates.row + 1;
-			toMove.col = robot->coordinates.col;
-			
-			move(robot, toMove, ops[index]);
-			
-			index++;
+			move(robot, ops[index]);
 			break;
-
 
 			case 4: // left push command
-			
-			toMove.row = robot->coordinates.row;
-			toMove.col = robot->coordinates.col - 1;
-			boxMove.row = boxLoc[robot->num].row;
-			boxMove.col = boxLoc[robot->num].col - 1;
-			
-			push(robot, toMove, boxMove, ops[index]);
-			
-			index++;
+			push(robot, ops[index]);
 			break;
-
 
 			case 5: // up push command
-			
-			toMove.row = robot->coordinates.row - 1;
-			toMove.col = robot->coordinates.col;
-			boxMove.row = boxLoc[robot->num].row - 1;
-			boxMove.col = boxLoc[robot->num].col;
-			
-			push(robot, toMove, boxMove, ops[index]);
-			
-			index++;
+			push(robot, ops[index]);
 			break;
 
-
 			case 6: // right push command
-
-			toMove.row = robot->coordinates.row;
-			toMove.col = robot->coordinates.col + 1;
-			boxMove.row = boxLoc[robot->num].row;
-			boxMove.col = boxLoc[robot->num].col + 1;
-		
-			push(robot, toMove, boxMove, ops[index]);
-			
-			index++;
+			push(robot, ops[index]);
 			break;
 
 
 			case 7: // down push command
-
-			toMove.row = robot->coordinates.row + 1;
-			toMove.col = robot->coordinates.col;
-			boxMove.row = boxLoc[robot->num].row + 1;
-			boxMove.col = boxLoc[robot->num].col;
-			
-			push(robot, toMove, boxMove, ops[index]);
-			
-			index++;
+			push(robot, ops[index]);
 			break;
 		}
-		
+
+		index++;
+
 		// Check whether box reached its destination, or robot was killed.
 		if(index == ops.size() || boxLoc[robot->num] == doorLoc[robot->assignedDoor] || robot->isAlive == false){
 			end(robot);
@@ -614,61 +544,111 @@ void robotFunc(Robot* robot)
 
 // Move robot on the grid in a distance of 1 cell.
 // Cases: 0 left, 1 up, 2 right, 3 down.
-void move(Robot* robot, GridPosition dest, int direction){
-	
-	robot->coordinates = dest;
+void move(Robot* robot, int direction){
+	GridPosition dest;
+
 	switch (direction){
 		case 0:
+			// Set new locations
+			dest.row = robot->coordinates.row;
+			dest.col = robot->coordinates.col - 1;
+
 			outputLock.lock();
 			output << "robot " << robot->num << " move W" << endl;
 			outputLock.unlock();
 			break;
 		case 2:			
+			// Set new locations
+			dest.row = robot->coordinates.row;
+			dest.col = robot->coordinates.col + 1;
+
 			outputLock.lock();
 			output << "robot " << robot->num << " move E" << endl;
 			outputLock.unlock();
 			break;
 		case 1: 
+			// Set new locations
+			dest.row = robot->coordinates.row - 1;
+			dest.col = robot->coordinates.col;
+
 			outputLock.lock();
 			output << "robot " << robot->num << " move N" << endl;
 			outputLock.unlock();
 			break;
 		case 3:
+			// Set new locations
+			dest.row = robot->coordinates.row + 1;
+			dest.col = robot->coordinates.col;
+
 			outputLock.lock();
 			output << "robot " << robot->num << " move S" << endl;
 			outputLock.unlock();
 			break;
 	}
+
+	//Move
+	robot->coordinates = dest;
 }
 
 // Move robot and its box on the grid in a distance of 1 cell.
 // Cases: 4 push left, 5 push up, 6 push right, 7 push down
-void push(Robot* robot, GridPosition dest, GridPosition boxMove, int direction){
+void push(Robot* robot, int direction){
+	GridPosition dest;
+	GridPosition boxMove;
 	
-	robot->coordinates = dest;
-	boxLoc[robot->num] = boxMove;
 	switch (direction){
 		case 4:
+			// Set new locations
+			dest.row = robot->coordinates.row;
+			dest.col = robot->coordinates.col - 1;
+			boxMove.row = boxLoc[robot->num].row;
+			boxMove.col = boxLoc[robot->num].col - 1;
+			
 			outputLock.lock();
 			output << "robot " << robot->num << " push W" << endl;
 			outputLock.unlock();
 			break;
-		case 5:			
+
+		case 5:		
+			// Set new locations
+			dest.row = robot->coordinates.row - 1;
+			dest.col = robot->coordinates.col;
+			boxMove.row = boxLoc[robot->num].row - 1;
+			boxMove.col = boxLoc[robot->num].col;
+				
 			outputLock.lock();
 			output << "robot " << robot->num << " push N" << endl;
 			outputLock.unlock();
 			break;
+
 		case 6: 
+			// Set new locations
+			dest.row = robot->coordinates.row;
+			dest.col = robot->coordinates.col + 1;
+			boxMove.row = boxLoc[robot->num].row;
+			boxMove.col = boxLoc[robot->num].col + 1;
+
 			outputLock.lock();
 			output << "robot " << robot->num << " push E" << endl;
 			outputLock.unlock();
 			break;
+
 		case 7:
+			// Set new locations
+			dest.row = robot->coordinates.row + 1;
+			dest.col = robot->coordinates.col;
+			boxMove.row = boxLoc[robot->num].row + 1;
+			boxMove.col = boxLoc[robot->num].col;
+
 			outputLock.lock();
 			output << "robot " << robot->num << " push S" << endl;
 			outputLock.unlock();
 			break;
 	}
+
+	// Move
+	robot->coordinates = dest;
+	boxLoc[robot->num] = boxMove;
 }
 
 // Check whether cell is available or occupied with a robot.
