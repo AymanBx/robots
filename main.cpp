@@ -59,6 +59,7 @@ void initDoors();
 void initRobots();
 void initBoxes();
 void removeDoors();
+void end(Robot* robot);
 bool checkAvailability(GridPosition coordinates);
 bool checkRobots(GridPosition coordinates);
 bool checkBoxes(GridPosition coordinates);
@@ -269,12 +270,14 @@ void cleanupAndQuit()
 	//	//	Free allocated resource before leaving (not absolutely needed, but
 	//	//	just nicer.  Also, if you crash there, you know something is wrong
 	//	//	in your code.
-	cout << "Cleanup" << endl;
+	
+	for (unsigned int i = 0; i < robots.size(); i++){
+		end(&robots[i]);
+	}
+	
 	for (unsigned int i = 0; i < threads.size(); i++){
-		cout << "Joined " << i << endl;
 		threads[i].join();
 	}
-	cout << "Done joining" << endl;
 
 	for (int i = 0; i < numRows; i++)
 		delete[] grid[i];
@@ -512,12 +515,17 @@ void robotFunc(Robot* robot)
 
 			if(!checkMovement(toMove)){
 				
-				// If move-left failed: move robot right then down then repath?! Only after first try? 
-				ops.clear();
-				ops.push_back(2);
-				ops.push_back(3);
-				ops.push_back(8);
-				index = 0;
+				if(attempt < 5){ // If after 5 attempts to move, repath.
+					attempt++;
+					usleep(1000 * (robot->num + 1)); // sleep for some time dependent on the robot num.
+				}
+				else {
+					ops.clear();
+					ops.push_back(2);
+					ops.push_back(3);
+					ops.push_back(8);
+					index = 0;
+				}
 				
 				gridLock.unlock();
 				continue;
@@ -542,11 +550,17 @@ void robotFunc(Robot* robot)
 			// If move right failed: move robot left then up then repath
 			if(!checkMovement(toMove)){
 				
-				ops.clear();
-				ops.push_back(0);
-				ops.push_back(1);
-				ops.push_back(8);
-				index = 0;
+				if(attempt < 5){ // If after 5 attempts to move, repath.
+					attempt++;
+					usleep(1000 * robot->num); // sleep for some time dependent on the robot num.
+				}
+				else {
+					ops.clear();
+					ops.push_back(2);
+					ops.push_back(3);
+					ops.push_back(8);
+					index = 0;
+				}
 				
 				gridLock.unlock();
 				continue;
@@ -572,11 +586,17 @@ void robotFunc(Robot* robot)
 			// If move up failed: move robot down then right then repath
 			if(!checkMovement(toMove)){
 				
-				ops.clear();
-				ops.push_back(3);
-				ops.push_back(2);
-				ops.push_back(8);
-				index = 0;
+				if(attempt < 5){ // If after 5 attempts to move, repath.
+					attempt++;
+					usleep(1000 * robot->num); // sleep for some time dependent on the robot num.
+				}
+				else {
+					ops.clear();
+					ops.push_back(2);
+					ops.push_back(3);
+					ops.push_back(8);
+					index = 0;
+				}
 				
 				gridLock.unlock();
 				continue;
@@ -602,11 +622,17 @@ void robotFunc(Robot* robot)
 			// If move down failed: move robot up then left then repath
 			if(!checkMovement(toMove)){
 				
-				ops.clear();
-				ops.push_back(1);
-				ops.push_back(0);
-				ops.push_back(8);
-				index = 0;
+				if(attempt < 5){ // If after 5 attempts to move, repath.
+					attempt++;
+					usleep(1000 * robot->num); // sleep for some time dependent on the robot num.
+				}
+				else {
+					ops.clear();
+					ops.push_back(2);
+					ops.push_back(3);
+					ops.push_back(8);
+					index = 0;
+				}
 				
 				gridLock.unlock();
 				continue;
