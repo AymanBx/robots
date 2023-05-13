@@ -277,7 +277,7 @@ void cleanupAndQuit()
 
 	// Join all the threads
 	for (unsigned int i = 0; i < threads.size(); i++){
-		cout << "Joined " << i << endl;
+		// cout << "Joined " << i << endl;
 		threads[i].join();
 	}
 	// cout << "Done joining" << endl;
