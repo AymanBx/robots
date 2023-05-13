@@ -309,6 +309,11 @@ void initializeApplication(void)
 	//	necessarily in that order).
 	//---------------------------------------------------------------
 	
+	// Generate random seed
+	// unsigned int seed = time(NULL) % 5000;
+	// srand(824);
+	// cout << seed << endl;
+	
 	//	For extra credit
 	// generatePartitions();
 
@@ -495,6 +500,7 @@ void robotFunc(Robot* robot)
 		usleep(robotSleepTime / 10);
 
 		switch(ops[index]){
+
 
 			case 0: // left move command
 			move(robot, ops[index]);	
