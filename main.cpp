@@ -309,8 +309,8 @@ void initializeApplication(void)
 	//---------------------------------------------------------------
 	
 	// Generate random seed
-	unsigned int seed = time(NULL) % 5000;
-	srand(824);
+	// unsigned int seed = time(NULL) % 5000;
+	// srand(824);
 	// cout << seed << endl;
 	
 	//	For extra credit
@@ -723,8 +723,10 @@ void removeDoors(){
 // Make sure doors aren't placed over any already existing object.
 void initDoors(){
 	while (doorLoc.size() < (unsigned)numDoors){
-		int row = ((float)random()/(float)RAND_MAX) * numRows;
-		int col = ((float)random()/(float)RAND_MAX) * numCols;
+		// int row = ((float)random()/(float)RAND_MAX) * numRows;
+		// int col = ((float)random()/(float)RAND_MAX) * numCols;
+		int row = rowDist(engine);
+		int col = colDist(engine);
 		GridPosition coordinates = {row, col};
 		bool available = checkAvailability(coordinates);
 		if (available){
@@ -758,10 +760,13 @@ void initBoxes(){
 // Create a thread for each robot pass the robot and the robot function to it.
 void initRobots(){
 	while (robots.size() < (unsigned)numBoxes){
-		int row = ((float)random()/(float)RAND_MAX) * numRows;
-		int col = ((float)random()/(float)RAND_MAX) * numCols;
+		// int row = ((float)random()/(float)RAND_MAX) * numRows;
+		// int col = ((float)random()/(float)RAND_MAX) * numCols;
+		int row = rowDist(engine);
+		int col = colDist(engine);
 		
-		int randDoor = ((float)random()/(float)RAND_MAX) * (float)(doorLoc.size());
+		// int randDoor = ((float)random()/(float)RAND_MAX) * (float)(doorLoc.size());
+		int randDoor = doorDist(engine);
 		
 		GridPosition coordinates = {row, col};
 		bool available = checkAvailability(coordinates);
