@@ -159,7 +159,7 @@ uniform_int_distribution<int> rowDist;
 uniform_int_distribution<int> colDist;
 
 // Create & initialize locks
-mutex gridLock;
+// mutex gridLock;
 mutex outputLock;
 
 // Annotate the output file
@@ -518,18 +518,17 @@ void robotFunc(Robot* robot)
 			toMove.row = robot->coordinates.row;
 			toMove.col = robot->coordinates.col - 1;
 			
-			gridLock.lock();
-			if(!checkMovement(toMove)){
-				// If move-left failed: move robot right then down then repath?! Only after first try? 
-				ops.clear();
-				ops.push_back(2);
-				ops.push_back(3);
-				ops.push_back(8);
-				index = 0;
+			// if(!checkMovement(toMove)){
+			// 	// If move-left failed: move robot right then down then repath?! Only after first try? 
+			// 	ops.clear();
+			// 	ops.push_back(2);
+			// 	ops.push_back(3);
+			// 	ops.push_back(8);
+			// 	index = 0;
 				
-				gridLock.unlock();
-				continue;
-			}
+			// 	gridLock.unlock();
+			// 	continue;
+			// }
 			move(robot, toMove, ops[index]);	
 					
 			index++;
@@ -540,18 +539,17 @@ void robotFunc(Robot* robot)
 			toMove.row = robot->coordinates.row;
 			toMove.col = robot->coordinates.col + 1;
 			
-			gridLock.lock();
 			// If move right failed: move robot left then up then repath
-			if(!checkMovement(toMove)){
-				ops.clear();
-				ops.push_back(0);
-				ops.push_back(1);
-				ops.push_back(8);
-				index = 0;
+			// if(!checkMovement(toMove)){
+			// 	ops.clear();
+			// 	ops.push_back(0);
+			// 	ops.push_back(1);
+			// 	ops.push_back(8);
+			// 	index = 0;
 	
-				gridLock.unlock();
-				continue;
-			}
+			// 	gridLock.unlock();
+			// 	continue;
+			// }
 			move(robot, toMove, ops[index]);
 			
 			index++;
@@ -563,18 +561,17 @@ void robotFunc(Robot* robot)
 			toMove.row = robot->coordinates.row - 1;
 			toMove.col = robot->coordinates.col;
 			
-			gridLock.lock();
 			// If move up failed: move robot down then right then repath
-			if(!checkMovement(toMove)){
-				ops.clear();
-				ops.push_back(3);
-				ops.push_back(2);
-				ops.push_back(8);
-				index = 0;
+			// if(!checkMovement(toMove)){
+			// 	ops.clear();
+			// 	ops.push_back(3);
+			// 	ops.push_back(2);
+			// 	ops.push_back(8);
+			// 	index = 0;
 				
-				gridLock.unlock();
-				continue;
-			}
+			// 	gridLock.unlock();
+			// 	continue;
+			// }
 			move(robot, toMove, ops[index]);
 			
 			index++;
@@ -586,19 +583,18 @@ void robotFunc(Robot* robot)
 			toMove.row = robot->coordinates.row + 1;
 			toMove.col = robot->coordinates.col;
 			
-			gridLock.lock();
 			// If move down failed: move robot up then left then repath
-			if(!checkMovement(toMove)){
+			// if(!checkMovement(toMove)){
 				
-				ops.clear();
-				ops.push_back(1);
-				ops.push_back(0);
-				ops.push_back(8);
-				index = 0;
+			// 	ops.clear();
+			// 	ops.push_back(1);
+			// 	ops.push_back(0);
+			// 	ops.push_back(8);
+			// 	index = 0;
 				
-				gridLock.unlock();
-				continue;
-			}
+			// 	gridLock.unlock();
+			// 	continue;
+			// }
 			move(robot, toMove, ops[index]);
 			
 			index++;
@@ -612,12 +608,11 @@ void robotFunc(Robot* robot)
 			boxMove.row = boxLoc[robot->num].row;
 			boxMove.col = boxLoc[robot->num].col - 1;
 			
-			gridLock.lock();
 			// If failed, repeat
-			if(!checkMovement(boxMove) && !(boxMove == doorLoc[robot->assignedDoor])){
-				gridLock.unlock();
-				continue;
-			}
+			// if(!checkMovement(boxMove) && !(boxMove == doorLoc[robot->assignedDoor])){
+			// 	gridLock.unlock();
+			// 	continue;
+			// }
 			push(robot, toMove, boxMove, ops[index]);
 			
 			index++;
@@ -631,12 +626,11 @@ void robotFunc(Robot* robot)
 			boxMove.row = boxLoc[robot->num].row - 1;
 			boxMove.col = boxLoc[robot->num].col;
 			
-			gridLock.lock();
 			// If failed, repeat
-			if(!checkMovement(boxMove) && !(boxMove == doorLoc[robot->assignedDoor])){
-				gridLock.unlock();
-				continue;
-			}
+			// if(!checkMovement(boxMove) && !(boxMove == doorLoc[robot->assignedDoor])){
+			// 	gridLock.unlock();
+			// 	continue;
+			// }
 			push(robot, toMove, boxMove, ops[index]);
 			
 			index++;
@@ -649,12 +643,11 @@ void robotFunc(Robot* robot)
 			boxMove.row = boxLoc[robot->num].row;
 			boxMove.col = boxLoc[robot->num].col + 1;
 			
-			gridLock.lock();
-			// If failed, repeat
-			if(!checkMovement(boxMove) && !(boxMove == doorLoc[robot->assignedDoor])){
-				gridLock.unlock();
-				continue;
-			}
+			// // If failed, repeat
+			// if(!checkMovement(boxMove) && !(boxMove == doorLoc[robot->assignedDoor])){
+			// 	gridLock.unlock();
+			// 	continue;
+			// }
 			push(robot, toMove, boxMove, ops[index]);
 			
 			index++;
@@ -667,23 +660,22 @@ void robotFunc(Robot* robot)
 			boxMove.row = boxLoc[robot->num].row + 1;
 			boxMove.col = boxLoc[robot->num].col;
 			
-			gridLock.lock();
-			// If failed, repeat
-			if(!checkMovement(boxMove) && !(boxMove == doorLoc[robot->assignedDoor])){
-				gridLock.unlock();
-				continue;
-			}
+			// // If failed, repeat
+			// if(!checkMovement(boxMove) && !(boxMove == doorLoc[robot->assignedDoor])){
+			// 	gridLock.unlock();
+			// 	continue;
+			// }
 			push(robot, toMove, boxMove, ops[index]);
 			
 			index++;
 			break;
 
 
-			case 8:
-			ops.clear();
-			ops = path_box_to_door(robot);
-			index = 0;
-			break;
+			// case 8:
+			// ops.clear();
+			// ops = path_box_to_door(robot);
+			// index = 0;
+			// break;
 
 		}
 		
@@ -723,7 +715,6 @@ void move(Robot* robot, GridPosition dest, int direction){
 			break;
 
 	}
-	gridLock.unlock();
 }
 
 void push(Robot* robot, GridPosition dest, GridPosition boxMove, int direction){
@@ -755,7 +746,6 @@ void push(Robot* robot, GridPosition dest, GridPosition boxMove, int direction){
 			break;
 
 	}
-	gridLock.unlock();
 }
 
 bool checkRobots(GridPosition coordinates){
