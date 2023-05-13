@@ -269,12 +269,14 @@ void cleanupAndQuit()
 	//	//	Free allocated resource before leaving (not absolutely needed, but
 	//	//	just nicer.  Also, if you crash there, you know something is wrong
 	//	//	in your code.
-	cout << "Cleanup" << endl;
+	
+	for(unsigned int i = 0; i < robots.size(); i++){
+		robots[i].isAlive = false;
+	}
+	
 	for (unsigned int i = 0; i < threads.size(); i++){
-		cout << "Joined " << i << endl;
 		threads[i].join();
 	}
-	cout << "Done joining" << endl;
 
 	for (int i = 0; i < numRows; i++)
 		delete[] grid[i];
@@ -282,7 +284,6 @@ void cleanupAndQuit()
 	for (int k = 0; k < MAX_NUM_MESSAGES; k++)
 		delete[] message[k];
 	delete[] message;
-	cout << "Professor's" << endl;
 
 
 	exit(0);
@@ -304,11 +305,6 @@ void initializeApplication(void)
 	//	of the doors, boxes, and robots, and create threads (not
 	//	necessarily in that order).
 	//---------------------------------------------------------------
-	
-	// Generate random seed
-	unsigned int seed = time(NULL) % 5000;
-	srand(824);
-	cout << seed << endl;
 	
 
 	doorAssign.clear();
@@ -340,7 +336,6 @@ vector<int> directionsToBoxPushStart(Robot* robot){
 	
 	
 	GridPosition robotDistanceH = getDistance(robot->coordinates, robotPushingPosH);
-
 	
 	bool left = robotDistanceH.col < 0 ? true : false;
 	bool up = robotDistanceH.row < 0 ? true : false;
@@ -467,7 +462,6 @@ void end(Robot* robot){
 void robotFunc(Robot* robot)
 {
 	
-	unsigned int attempt = 0;
 	bool isAlive = true;
 	unsigned int index = 0;
 	
@@ -475,22 +469,6 @@ void robotFunc(Robot* robot)
 	// 0 left, 1 up, 2 right, 3 down
 	// 4 push left, 5 push up, 6 push right, 7 push down
 	vector<int> ops = path_box_to_door(robot);
-	
-	cout << robot->num << ":";
-	for(int op : ops){
-		switch(op){
-			case 0: cout << " W"; break;
-			case 1: cout << " N"; break;
-			case 2: cout << " E"; break;
-			case 3: cout << " S"; break;
-			case 4: cout << " PW"; break;
-			case 5: cout << " PN"; break;
-			case 6: cout << " PE"; break;
-			case 7: cout << " PS"; break;
-		}
-	}
-	cout << endl;
-	
 	
 	while(isAlive){
 		
@@ -511,14 +489,6 @@ void robotFunc(Robot* robot)
 			gridLock.lock();
 
 			if(!checkMovement(toMove)){
-				
-				// If move-left failed: move robot right then down then repath?! Only after first try? 
-				ops.clear();
-				ops.push_back(2);
-				ops.push_back(3);
-				ops.push_back(8);
-				index = 0;
-				
 				gridLock.unlock();
 				continue;
 			}
@@ -541,13 +511,6 @@ void robotFunc(Robot* robot)
 			gridLock.lock();
 			// If move right failed: move robot left then up then repath
 			if(!checkMovement(toMove)){
-				
-				ops.clear();
-				ops.push_back(0);
-				ops.push_back(1);
-				ops.push_back(8);
-				index = 0;
-				
 				gridLock.unlock();
 				continue;
 			}
@@ -571,13 +534,6 @@ void robotFunc(Robot* robot)
 			gridLock.lock();
 			// If move up failed: move robot down then right then repath
 			if(!checkMovement(toMove)){
-				
-				ops.clear();
-				ops.push_back(3);
-				ops.push_back(2);
-				ops.push_back(8);
-				index = 0;
-				
 				gridLock.unlock();
 				continue;
 			}
@@ -601,13 +557,6 @@ void robotFunc(Robot* robot)
 			gridLock.lock();
 			// If move down failed: move robot up then left then repath
 			if(!checkMovement(toMove)){
-				
-				ops.clear();
-				ops.push_back(1);
-				ops.push_back(0);
-				ops.push_back(8);
-				index = 0;
-				
 				gridLock.unlock();
 				continue;
 			}
@@ -725,14 +674,6 @@ void robotFunc(Robot* robot)
 			
 			index++;
 			break;
-
-
-			case 8:
-			ops.clear();
-			ops = path_box_to_door(robot);
-			index = 0;
-			break;
-
 		}
 		
 		if(index == ops.size() || boxLoc[robot->num] == doorLoc[robot->assignedDoor] || robot->isAlive == false){
@@ -787,8 +728,8 @@ void removeDoors(){
 
 void initDoors(){
 	while (doorLoc.size() < (unsigned)numDoors){
-		int row = ((float)random()/(float)RAND_MAX) * numRows;
-		int col = ((float)random()/(float)RAND_MAX) * numCols;
+		int row = rowDist(engine);
+		int col = colDist(engine);
 		GridPosition coordinates = {row, col};
 		bool available = checkAvailability(coordinates);
 		if (available){
@@ -817,10 +758,10 @@ void initBoxes(){
 
 void initRobots(){
 	while (robots.size() < (unsigned)numBoxes){
-		int row = ((float)random()/(float)RAND_MAX) * numRows;
-		int col = ((float)random()/(float)RAND_MAX) * numCols;
+		int row = rowDist(engine);
+		int col = colDist(engine);
 		
-		int randDoor = ((float)random()/(float)RAND_MAX) * (float)(doorLoc.size());
+		int randDoor = doorDist(engine);
 		
 		GridPosition coordinates = {row, col};
 		bool available = checkAvailability(coordinates);
